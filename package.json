@@ -4,7 +4,7 @@
   "private": true,
   "description": "GoldShore organization monorepo",
   "scripts": {
-    "build": "pnpm -r --filter=\"./apps/*\" build",
+    "build": "pnpm -r --filter=\"./packages/*\" build && pnpm -r --filter=\"./apps/*\" build",
     "dev": "pnpm -r --parallel --filter=\"./apps/*\" dev",
     "preview": "pnpm -r --filter=\"./apps/*\" preview",
     "deploy": "pnpm -r --filter=\"./apps/*\" deploy",
