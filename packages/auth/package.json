@@ -2,12 +2,19 @@
   "name": "@goldshore/auth",
   "version": "0.0.1",
   "private": true,
-  "main": "index.ts",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "echo 'No build script yet'"
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/index.ts --format esm --dts --watch"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@cloudflare/workers-types": "^4.0.0"
+    "@cloudflare/workers-types": "^4.0.0",
+    "hono": "^4.0.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.0.0"
   }
 }
