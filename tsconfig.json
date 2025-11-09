@@ -1,8 +1,11 @@
 {
-  "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
   "compilerOptions": {
-    "strictNullChecks": true
+    "baseUrl": ".",
+    "paths": {
+      "@goldshore/ui/*": ["packages/ui/*"],
+      "@goldshore/config/*": ["packages/config/*"],
+      "@goldshore/utils/*": ["packages/utils/*"],
+      "@goldshore/auth/*": ["packages/auth/*"]
+    }
   }
 }

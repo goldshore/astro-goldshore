@@ -1,36 +1,21 @@
 {
-  "name": "astro-goldshore",
-  "description": "Build a personal website, blog, or portfolio with Astro.",
+  "name": "goldshore-monorepo",
+  "version": "1.0.0",
   "private": true,
-  "cloudflare": {
-    "label": "Astro Framework Starter",
-    "products": [
-      "Workers"
-    ],
-    "categories": [],
-    "preview_icon_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/394ca3c9-d351-4036-035a-9f6dfa26dd00/public",
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/f40a6577-eed5-4f3e-cef4-b5ef0a1be100/preview",
-    "publish": true
-  },
-  "dependencies": {
-    "@astrojs/cloudflare": "12.6.0",
-    "@astrojs/mdx": "4.3.0",
-    "@astrojs/rss": "4.0.11",
-    "@astrojs/sitemap": "3.4.1",
-    "astro": "5.10.1",
-    "typescript": "5.8.3"
+  "description": "GoldShore organization monorepo",
+  "scripts": {
+    "build": "pnpm -r --filter=\"./packages/*\" build && pnpm -r --filter=\"./apps/*\" build",
+    "dev": "pnpm -r --parallel --filter=\"./apps/*\" dev",
+    "preview": "pnpm -r --filter=\"./apps/*\" preview",
+    "deploy": "pnpm -r --filter=\"./apps/*\" deploy",
+    "lint": "eslint . --ext .ts,.tsx,.astro",
+    "format": "prettier --write ."
   },
   "devDependencies": {
-    "wrangler": "4.21.x"
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "prettier-plugin-astro": "^0.13.0",
+    "typescript": "^5.4.2"
   },
-  "scripts": {
-    "astro": "astro",
-    "build": "astro build",
-    "cf-typegen": "wrangler types",
-    "check": "astro build && tsc && wrangler deploy --dry-run",
-    "deploy": "wrangler deploy",
-    "dev": "astro dev",
-    "preview": "astro build && wrangler dev"
-  },
-  "type": "module"
+  "packageManager": "pnpm@8.15.5"
 }
