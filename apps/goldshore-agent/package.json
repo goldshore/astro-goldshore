@@ -8,6 +8,9 @@
     "deploy": "wrangler deploy --minify src/index.ts --config ../../infra/cloudflare/goldshore-agent.wrangler.toml",
     "build": "wrangler deploy src/index.ts --dry-run --outdir=dist --config ../../infra/cloudflare/goldshore-agent.wrangler.toml"
   },
+  "dependencies": {
+    "@goldshore/auth": "workspace:*"
+  },
   "devDependencies": {
     "wrangler": "^3.0.0",
     "typescript": "^5.0.0",

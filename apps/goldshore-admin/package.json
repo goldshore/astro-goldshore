@@ -10,6 +10,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@goldshore/auth": "workspace:*",
     "astro": "^4.12.2"
   }
 }

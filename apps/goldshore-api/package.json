@@ -9,6 +9,7 @@
     "build": "wrangler deploy src/index.ts --dry-run --outdir=dist --config ../../infra/cloudflare/goldshore-api.wrangler.toml"
   },
   "dependencies": {
+    "@goldshore/auth": "workspace:*",
     "hono": "^4.0.0"
   },
   "devDependencies": {

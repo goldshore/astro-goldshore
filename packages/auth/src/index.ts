@@ -1,44 +1,107 @@
 // packages/auth/src/index.ts
 
 import type { MiddlewareHandler } from 'hono';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+import type { JWTPayload } from 'jose';
 
-/**
- * A type representing the user identity decoded from a Cloudflare Access JWT.
- * This can be expanded with more properties as needed.
- */
-export interface AccessUser {
+// Define the shape of the Cloudflare Access JWT payload
+export interface AccessTokenPayload extends JWTPayload {
   email: string;
   groups: string[];
-  // Add other claims like 'name', 'country', etc. as needed
+  // You can add other claims like 'name', 'country', 'custom', etc. as needed.
+  // See: https://developers.cloudflare.com/cloudflare-one/identity/users/validating-json/#payload
+}
+
+// Re-export the payload type for convenience in other packages
+export type AccessUser = AccessTokenPayload;
+
+// --- JWT Verification ---
+
+// Cache for the JWK set to avoid fetching it on every request
+let jwkSet: ReturnType<typeof createRemoteJWKSet>;
+
+function getJwkSet(teamDomain: string) {
+  if (!jwkSet) {
+    const certsUrl = `https://${teamDomain}.cloudflareaccess.com/cdn-cgi/access/certs`;
+    jwkSet = createRemoteJWKSet(new URL(certsUrl));
+  }
+  return jwkSet;
 }
 
 /**
- * Placeholder function to extract a user's identity from a request.
- * In a real implementation, this would involve verifying a JWT.
+ * Verifies the Cloudflare Access JWT from the request headers.
  *
  * @param request The incoming Request object.
- * @returns The user's identity or null if not authenticated.
+ * @param teamDomain Your Cloudflare Zero Trust team domain.
+ * @param audience The Application Audience (AUD) tag.
+ * @returns The verified token payload, or null if verification fails.
  */
-export async function getUserFromRequest(request: Request): Promise<AccessUser | null> {
-  // TODO: Implement actual JWT verification logic here.
-  // This will involve getting the CF-Access-JWT-Assertion header
-  // and verifying it against the Cloudflare Access public keys.
-  console.log('getUserFromRequest is a placeholder and does not perform real authentication.');
-  return null;
+export async function verifyCfAccessJwt(
+  request: Request,
+  teamDomain: string,
+  audience: string
+): Promise<AccessTokenPayload | null> {
+  const jwt = request.headers.get('CF-Access-JWT-Assertion');
+  if (!jwt) {
+    return null;
+  }
+
+  try {
+    const { payload } = await jwtVerify(jwt, getJwkSet(teamDomain), {
+      issuer: `https://${teamDomain}.cloudflareaccess.com`,
+      audience: audience,
+    });
+    return payload as AccessTokenPayload;
+  } catch (err) {
+    console.error('JWT Verification Failed:', err);
+    return null;
+  }
 }
 
+// --- Hono Middleware ---
+
+// This type allows us to add a `user` property to the Hono context
+export type AuthContext = {
+  Variables: {
+    user?: AccessUser;
+  };
+};
 
 /**
- * Hono middleware to protect routes by requiring a specific role (group).
+ * Creates a Hono middleware for Cloudflare Access authentication.
+ *
+ * @param options Configuration options for the middleware.
+ * @param options.teamDomain Your Cloudflare Zero Trust team domain.
+ * @param options.audience The Application Audience (AUD) tag for your app.
+ * @returns A Hono MiddlewareHandler.
+ */
+export const createAuthMiddleware = (options: {
+  teamDomain: string;
+  audience: string;
+}): MiddlewareHandler<AuthContext> => {
+  return async (c, next) => {
+    const user = await verifyCfAccessJwt(c.req.raw, options.teamDomain, options.audience);
+    if (!user) {
+      return c.json({ error: 'Unauthorized', message: 'Missing or invalid token' }, 401);
+    }
+    c.set('user', user);
+    await next();
+  };
+};
+
+/**
+ * Creates a Hono middleware to protect routes by requiring a specific role (group).
+ * This middleware must run *after* the auth middleware.
  *
  * @param role The role (Access group) required to access the route.
  * @returns A Hono MiddlewareHandler.
  */
-export const requireRole = (role: 'admin' | 'editor' | 'user'): MiddlewareHandler => {
+export const requireRole = (role: string): MiddlewareHandler<AuthContext> => {
   return async (c, next) => {
-    // TODO: Implement actual role checking logic here.
-    // This will use getUserFromRequest and check if the user's groups include the required role.
-    console.log(`requireRole('${role}') is a placeholder and does not perform real authorization.`);
+    const user = c.get('user');
+    if (!user || !user.groups || !user.groups.includes(role)) {
+      return c.json({ error: 'Forbidden', message: 'You do not have permission to access this resource' }, 403);
+    }
     await next();
   };
 };
