@@ -24,7 +24,7 @@ The monorepo is organized into the following workspaces:
 
 ## Getting Started
 
-1.  **Install Tools**: Ensure you have `asdf` or a similar tool installed to manage runtime versions. The required versions of `nodejs` and `pnpm` are specified in the `.tool-versions` file.
+1.  **Install Tools**: Ensure you have `asdf` or a similar tool installed to manage runtime versions. The required version of `nodejs` is specified in the `.tool-versions` file. The repository declares its `pnpm` version via the `packageManager` field in `package.json`, so you can run `corepack use pnpm@8.15.5` (or `corepack enable`) after installing Node.
 2.  **Install Dependencies**: Run the following command from the root of the monorepo to install all dependencies for all workspaces:
     ```bash
     pnpm install
