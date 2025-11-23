@@ -1,4 +1,7 @@
-import { Hono } from 'hono'
+import { Hono } from 'hono';
+import users from './routes/users';
+import health from './routes/health';
+import ai from './routes/ai';
 
 type Env = {
   API_KV: KVNamespace
@@ -24,4 +27,4 @@ v1.get('/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
 
 app.route('/v1', v1)
 
-export default app
+export default app;
