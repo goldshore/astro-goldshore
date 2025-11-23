@@ -1,15 +1,5 @@
 name = "gs-gateway"
-main = "src/index.ts"
-compatibility_date = "2024-11-01"
+compatibility_date = "2024-01-01"
 
-[[services]]
-binding = "API"
-service = "gs-api"
-environment = "production"
-
-[[kv_namespaces]]
-binding = "GATEWAY_KV"
-id = "goldshore-gw-kv"
-
-[ai]
-binding = "AI"
+[observability]
+enabled = true
