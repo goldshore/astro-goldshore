@@ -8,12 +8,18 @@
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
+    "build:web": "turbo run build --filter=@goldshore/web",
+    "build:admin": "turbo run build --filter=@goldshore/admin",
+    "build:api": "turbo run build --filter=@goldshore/api-worker",
+    "build:gateway": "turbo run build --filter=@goldshore/gateway",
+    "build:control": "turbo run build --filter=@goldshore/control-worker",
     "lint": "turbo run lint",
     "test": "turbo run test"
   },
   "devDependencies": {
     "astro": "^5.15.9",
     "eslint": "^8.57.0",
+    "eslint-plugin-astro": "^1.5.0",
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
     "typescript": "^5.4.2"
