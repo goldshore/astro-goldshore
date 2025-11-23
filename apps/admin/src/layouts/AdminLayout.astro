@@ -1,0 +1,12 @@
+---
+import AdminNav from "../components/AdminNav.astro";
+const { title } = Astro.props;
+---
+
+<html>
+  <head><title>{title}</title></head>
+  <body>
+    <AdminNav />
+    <main><slot /></main>
+  </body>
+</html>

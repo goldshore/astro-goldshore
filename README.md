@@ -19,7 +19,11 @@ The monorepo uses:
 
 ---
 
-🖼 Brand Identity
+- **`apps/`**: Contains the individual, deployable applications.
+  - `gs-web`: The main public-facing Astro website and user portal.
+  - `gs-admin`: The Astro-based administration dashboard.
+  - `gs-api`: A Hono-based API running on Cloudflare Workers.
+  - `gs-gateway`: A Cloudflare Worker for background jobs and queue processing.
 
 GoldShore Brand Variants
 

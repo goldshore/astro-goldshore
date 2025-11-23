@@ -1,0 +1,42 @@
+name: Preview Admin (admin.goldshore.ai)
+
+on:
+  pull_request:
+    paths:
+      - "apps/admin/**"
+      - "packages/ui/**"
+      - "packages/theme/**"
+  push:
+    branches:
+      - "feature/**"
+
+jobs:
+  preview-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336abf0e0f52c777ae4f975e966d0
+
+      - uses: actions/setup-node@60edb5dd7ba3c0c2c5e0df3e00d8c3f1e5f1b8ac
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: pnpm/action-setup@c8fa85d5757c0c966f0a5c5c26a9a5c7bb334d4c
+        with:
+          version: 8.15.8
+
+      - run: pnpm install
+
+      - run: pnpm --filter @goldshore/admin build
+        env:
+          PUBLIC_API: https://api-preview.goldshore.ai
+          PUBLIC_GATEWAY: https://gw-preview.goldshore.ai
+
+      - name: Deploy Admin Preview
+        uses: cloudflare/pages-action@e4e6f7e75eb3dda82db28134c66da2db78df12d4
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: gs-admin
+          directory: apps/admin/dist
+          branch: ${{ github.head_ref || github.ref_name }}

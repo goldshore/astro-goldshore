@@ -1,23 +1,21 @@
 name = "gs-control"
 main = "src/index.ts"
-compatibility_date = "2025-01-01"
-compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2024-11-01"
 
-[dev]
-port = 8789
+[[kv_namespaces]]
+binding = "CONTROL_LOGS"
+id = "gs_control_logs_001"
 
-# These secrets must be added in Cloudflare dashboard:
-# CLOUDFLARE_API_TOKEN
-# CLOUDFLARE_ACCOUNT_ID
-# CLOUDFLARE_ZONE_ID
+[[r2_buckets]]
+binding = "STATE"
+bucket_name = "gs-control-state"
 
-[vars]
-ENVIRONMENT = "production"
-CONTROL_WORKER = "true"
+[[services]]
+binding = "API"
+service = "gs-api"
+environment = "production"
 
-[env.preview.vars]
-ENVIRONMENT = "preview"
-CONTROL_WORKER = "true"
-
-[routes]
-"ops.goldshore.ai/*" = { "zone_name" = "goldshore.ai" }
+[[services]]
+binding = "GATEWAY"
+service = "gs-gateway"
+environment = "production"

@@ -1,12 +1,12 @@
 {
-  "name": "@goldshore/api",
+  "name": "@goldshore/api-worker",
   "version": "0.0.1",
   "private": true,
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev src/index.ts --config ../../infra/cloudflare/goldshore-api.wrangler.toml",
-    "deploy": "wrangler deploy --minify src/index.ts --config ../../infra/cloudflare/goldshore-api.wrangler.toml",
-    "build": "wrangler deploy src/index.ts --dry-run --outdir=dist --config ../../infra/cloudflare/goldshore-api.wrangler.toml"
+    "dev": "wrangler dev src/index.ts --config wrangler.toml",
+    "build": "wrangler deploy src/index.ts --dry-run --outdir=dist --config wrangler.toml",
+    "deploy": "wrangler deploy src/index.ts --config wrangler.toml"
   },
   "dependencies": {
     "hono": "^4.0.0"
