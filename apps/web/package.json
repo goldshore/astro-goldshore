@@ -4,12 +4,15 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
+    "start": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.15.9",
-    "@astrojs/cloudflare": "^11.0.1",
-    "@goldshore/theme": "workspace:*"
+    "astro": "^5.0.0",
+    "@astrojs/cloudflare": "^12.0.0",
+    "@goldshore/theme": "workspace:*",
+    "@goldshore/ui": "workspace:*"
   }
 }
