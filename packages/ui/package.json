@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "echo 'No build script yet'"
+    "build": "tsc"
   },
   "devDependencies": {
     "astro": "^4.0.0",
