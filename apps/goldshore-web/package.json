@@ -9,7 +9,6 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.15.4",
-    "@goldshore/theme": "workspace:*"
+    "astro": "^5.15.9"
   }
 }
