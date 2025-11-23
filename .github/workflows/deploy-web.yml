@@ -1,0 +1,31 @@
+name: Deploy Astro GS Web
+
+on:
+  push:
+    paths:
+      - "apps/web/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - name: Build Web
+        run: |
+          cd apps/web
+          npm run build
+
+      - name: Deploy Web
+        working-directory: apps/web
+        run: npx wrangler pages deploy dist
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

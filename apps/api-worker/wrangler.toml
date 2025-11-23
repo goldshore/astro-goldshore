@@ -1,0 +1,11 @@
+name = "astro-gs-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+routes = [
+  { pattern = "api.goldshore.ai/*", zone_name = "goldshore.ai" },
+  { pattern = "api-preview.goldshore.ai/*", zone_name = "goldshore.ai" }
+]
+
+[vars]
+API_ENV = "production"

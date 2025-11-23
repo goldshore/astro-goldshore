@@ -1,0 +1,8 @@
+@import "@theme/tokens.css";
+
+body {
+  margin: 0;
+  background: var(--gs-blue-alcantara);
+  color: var(--gs-text-primary);
+  font-family: var(--font-body);
+}
