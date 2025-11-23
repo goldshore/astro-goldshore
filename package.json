@@ -1,15 +1,15 @@
 {
-  "name": "goldshore-monorepo",
-  "version": "1.0.0",
+  "name": "astro-goldshore",
   "private": true,
-  "description": "GoldShore organization monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "build": "pnpm -r --filter=\"./apps/*\" build",
-    "dev": "pnpm -r --parallel --filter=\"./apps/*\" dev",
-    "preview": "pnpm -r --filter=\"./apps/*\" preview",
-    "deploy": "pnpm -r --filter=\"./apps/*\" deploy",
-    "lint": "eslint . --ext .ts,.tsx,.astro",
-    "format": "prettier --write ."
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
