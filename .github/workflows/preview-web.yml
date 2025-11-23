@@ -1,40 +1,34 @@
-name: Preview Web (goldshore.ai)
+name: Preview Web Deployment
 
 on:
   pull_request:
-    paths:
-      - "apps/web/**"
-      - "packages/ui/**"
-      - "packages/theme/**"
-  push:
     branches:
-      - "feature/**"
+      - main
 
 jobs:
-  preview-web:
+  deploy-preview:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336abf0e0f52c777ae4f975e966d0
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd7ba3c0c2c5e0df3e00d8c3f1e5f1b8ac
         with:
-          node-version: 22
+          node-version: 20
+          cache: pnpm
 
-      - name: Install deps
-        run: npm install
+      - name: Install dependencies
+        run: pnpm install
 
-      - name: Build web app
-        working-directory: apps/web
-        env:
-          PUBLIC_API: https://api-preview.goldshore.ai
-          PUBLIC_GATEWAY: https://gw-preview.goldshore.ai
-        run: npm run build
+      - name: Build Web App
+        run: pnpm --filter "./apps/web" build
 
-      - name: Deploy to Cloudflare Pages (preview)
-        uses: cloudflare/pages-action@v1
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@e4e6f7e75eb3dda82db28134c66da2db78df12d4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: astro-gs-web
-          directory: dist
-          branch: ${{ github.head_ref || github.ref_name }}
+          projectName: gs-web
+          directory: apps/web/dist
