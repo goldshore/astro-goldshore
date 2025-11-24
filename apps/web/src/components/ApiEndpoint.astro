@@ -1,0 +1,36 @@
+---
+const { openapi, endpoint } = Astro.props;
+const path = '/' + endpoint;
+const spec = openapi.paths[path];
+---
+
+<div class="api-endpoint">
+  <h1>{path}</h1>
+
+  {spec && Object.entries(spec).map(([method, details]) => (
+    <div class="method-block">
+      <h2 class={`method ${method}`}>{method.toUpperCase()}</h2>
+      <p>{(details as any).summary}</p>
+
+      <h3>Responses</h3>
+      <pre>{JSON.stringify((details as any).responses, null, 2)}</pre>
+    </div>
+  ))}
+
+  {!spec && <p>Endpoint not found.</p>}
+</div>
+
+<style>
+  .api-endpoint {
+    padding: 2rem;
+    flex: 1;
+  }
+  .method {
+    font-weight: bold;
+    color: #0f172a;
+  }
+  .get { color: #2563eb; }
+  .post { color: #16a34a; }
+  .put { color: #d97706; }
+  .delete { color: #dc2626; }
+</style>

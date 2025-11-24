@@ -1,0 +1,6 @@
+@import './tokens.css';
+@import './reset.css';
+
+html {
+  color-scheme: dark;
+}

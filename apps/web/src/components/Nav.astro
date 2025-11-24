@@ -1,0 +1,48 @@
+---
+---
+<nav class="nav">
+  <div class="container">
+    <a href="/" class="brand">GoldShore</a>
+    <div class="links">
+      <a href="/developer/docs">Docs</a>
+      <a href="/developer/api/system/info">API</a>
+    </div>
+  </div>
+</nav>
+
+<style>
+  .nav {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1rem 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: white;
+    text-decoration: none;
+  }
+  .links {
+    display: flex;
+    gap: 1.5rem;
+  }
+  .links a {
+    color: #e2e8f0;
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: white;
+  }
+</style>

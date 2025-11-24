@@ -1,9 +1,7 @@
 :root {
-  --gs-bg: #020817;
-  --gs-surface: #020c1f;
-  --gs-accent: #0ea5e9;
-  --gs-accent-soft: rgba(14, 165, 233, 0.15);
-  --gs-text: #e5e7eb;
-  --gs-muted: #9ca3af;
-  --gs-radius: 12px;
+  --color-primary: #22c55e;
+  --color-secondary: #22d3ee;
+  --color-background: #020617;
+  --color-text: #e2e8f0;
+  --font-sans: system-ui, -apple-system, sans-serif;
 }

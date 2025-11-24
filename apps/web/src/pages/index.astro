@@ -1,51 +1,58 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Button from "../components/ui/Button.astro";
-import Badge from "../components/ui/Badge.astro";
-import Card from "../components/ui/Card.astro";
-import Section from "../components/ui/Section.astro";
-import Stat from "../components/ui/Stat.astro";
-
-const API = import.meta.env.PUBLIC_API ?? "https://api.goldshore.ai";
-const GATEWAY = import.meta.env.PUBLIC_GATEWAY ?? "https://gw.goldshore.ai";
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import { Button } from '@goldshore/ui';
 ---
 
-<WebLayout title="GoldShore – Secure AI Infra">
-  <Section align="center" max="lg">
-    <Badge tone="gold">Now live on Cloudflare</Badge>
-    <h1>Unified control plane for APIs, workers & AI agents.</h1>
-    <p style="color: var(--gs-text-soft); max-width: 540px; margin: 0 auto;">
-      GoldShore connects your Cloudflare Workers, Pages, Access policies, and AI pipelines into a
-      single, observable surface.
-    </p>
-    <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.4rem;">
-      <Button href="/developer/docs" variant="primary">Read the Docs</Button>
-      <Button href="https://admin.goldshore.ai" variant="ghost">Open Admin</Button>
-    </div>
-  </Section>
+<MarketingLayout title="Goldshore | Shaping Waves">
+  <section class="hero">
+    <div class="container">
+      <h1>Shaping <span>Waves</span></h1>
+      <p class="tag">System Status: Operational</p>
 
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
-      <Card tone="gold">
-        <h3>API Worker</h3>
-        <p>Primary business logic running on <code>gs-api</code> with KV, R2 and D1 bindings.</p>
-      </Card>
-      <Card tone="blue">
-        <h3>Gateway</h3>
-        <p>Request routing, rate limiting, and cross-service orchestration using <code>gs-gateway</code>.</p>
-      </Card>
-      <Card>
-        <h3>Control Worker</h3>
-        <p>Automates DNS, bindings, previews and infra sync for all GoldShore projects.</p>
-      </Card>
+      <div class="cta">
+        <Button href="/developer/docs">Documentation</Button>
+        <Button kind="secondary" href="https://github.com/goldshore">GitHub</Button>
+      </div>
     </div>
-  </Section>
+  </section>
+</MarketingLayout>
 
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:1rem;">
-      <Stat label="Median Edge Latency" value="23 ms" hint="Measured via Cloudflare POPs" />
-      <Stat label="Regions" value="275+" hint="Global anycast network coverage" />
-      <Stat label="Failure Budget" value="99.9%" hint="Designed for production workloads" />
-    </div>
-  </Section>
-</WebLayout>
+<style>
+  .hero {
+    padding: 8rem 0;
+    text-align: center;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: white;
+  }
+  h1 span {
+    background: linear-gradient(90deg, #22c55e, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tag {
+    display: inline-block;
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+  }
+  .cta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+</style>

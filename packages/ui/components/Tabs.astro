@@ -1,0 +1,32 @@
+---
+const { items = [] } = Astro.props;
+---
+<div class="gs-tabs">
+  <div class="tab-list">
+    {items.map(item => (
+      <button class="tab-btn">{item}</button>
+    ))}
+  </div>
+  <div class="tab-panels">
+    <slot />
+  </div>
+</div>
+<style>
+  .tab-list {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 1rem;
+  }
+  .tab-btn {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn:hover {
+    color: white;
+  }
+</style>

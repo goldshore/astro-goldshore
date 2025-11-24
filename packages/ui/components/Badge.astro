@@ -1,0 +1,16 @@
+---
+const { kind = 'info' } = Astro.props;
+---
+<span class={`gs-badge ${kind}`}>
+  <slot />
+</span>
+<style>
+  .gs-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(255,255,255,0.1);
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+import ApiSidebar from '../../../components/ApiSidebar.astro';
+import ApiEndpoint from '../../../components/ApiEndpoint.astro';
+
+const version = 'v1';
+// Fetching from self via absolute URL
+const openapi = await fetch(new URL(`/openapi/${version}.json`, Astro.url)).then(r => r.json());
+
+const { slug } = Astro.params;
+const endpoint = slug || 'system/info';
+---
+
+<div class="api">
+  <ApiSidebar openapi={openapi} />
+  <main>
+    <ApiEndpoint openapi={openapi} endpoint={endpoint} />
+  </main>
+</div>
+
+<style>
+  .api {
+    display: flex;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: system-ui, sans-serif;
+  }
+  main {
+    flex: 1;
+  }
+</style>
