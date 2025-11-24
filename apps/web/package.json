@@ -9,6 +9,13 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^12.6.11",
+    "@astrojs/mdx": "^4.3.12",
+    "@goldshore/theme": "workspace:*",
+    "@goldshore/ui": "workspace:*",
+    "astro": "^5.15.9",
+    "rehype-pretty-code": "^0.14.1",
+    "remark-gfm": "^4.0.1"
     "astro": "^5.16.0",
     "@astrojs/cloudflare": "^12.6.11",
     "@goldshore/ui": "workspace:*",
