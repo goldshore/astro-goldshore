@@ -1,0 +1,40 @@
+name = "gs-api"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+tsconfig = "tsconfig.json"
+
+[env.dev]
+name = "gs-api-dev"
+
+[env.preview]
+name = "gs-api-preview"
+
+[env.production]
+name = "gs-api"
+route = { pattern = "api.goldshore.ai/*", custom_domain = true }
+
+# Bindings will be managed via API per spec, but we can define them here for local dev if needed.
+# Spec says "Jules must configure... Bindings... Automatically" via API?
+# Actually spec says "Jules must create or update each Worker service using POST/PUT...".
+# But it also says "Jules must deploy workers using wrangler deploy... --config .../wrangler.toml".
+# Wrangler uses wrangler.toml.
+# The spec lists bindings under "Bindings Jules Must Add Automatically".
+# I'll put them in wrangler.toml as well so `wrangler deploy` picks them up if possible, or at least they are consistent.
+# BUT, the spec explicitly lists `PUT /accounts/...` calls.
+# I'll stick to a clean wrangler.toml for build/deploy basics.
+
+[[kv_namespaces]]
+binding = "KV"
+id = "placeholder_kv_id"
+
+[[r2_buckets]]
+binding = "ASSETS"
+bucket_name = "gs-api-assets"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gs-api-db"
+database_id = "placeholder_db_id"
+
+[ai]
+binding = "AI"

@@ -16,6 +16,8 @@ app.get("/ops/ping", (c) => {
   });
 });
 
+app.get('/v1/health', (c) => c.json({ status: 'ok', service: 'gs-control' }));
+
 app.get("/ops/preview/dns", async (c) => {
   // In a full implementation, this would:
   // - read infra/cloudflare/desired-state.yaml (baked into worker at build)
