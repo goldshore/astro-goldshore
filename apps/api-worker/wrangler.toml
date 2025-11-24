@@ -17,3 +17,6 @@ database_id = "gs_prod_db_001"
 
 [ai]
 binding = "AI"
+
+[observability]
+enabled = true

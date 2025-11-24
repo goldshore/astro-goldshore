@@ -9,3 +9,6 @@ environment = "production"
 
 [ai]
 binding = "AI"
+
+[observability]
+enabled = true
