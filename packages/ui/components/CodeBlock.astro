@@ -1,0 +1,57 @@
+---
+interface Props {
+  lang?: string;
+  code?: string;
+}
+const { lang = 'bash', code } = Astro.props;
+---
+<div class="gs-code-block">
+  <div class="gs-code-header">
+    <div class="gs-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <span class="gs-lang">{lang}</span>
+  </div>
+  <pre><code><slot>{code}</slot></code></pre>
+</div>
+<style>
+  .gs-code-block {
+    background: #000;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--gs-radius-sm);
+    overflow: hidden;
+    margin: 1.5rem 0;
+  }
+  .gs-code-header {
+    background: rgba(255,255,255,0.05);
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .gs-lang {
+    font-size: 0.75rem;
+    color: var(--gs-text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .gs-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .gs-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+  }
+  pre {
+    margin: 0;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--gs-text-soft);
+  }
+</style>

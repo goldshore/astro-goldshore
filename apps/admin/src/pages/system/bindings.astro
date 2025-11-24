@@ -1,0 +1,53 @@
+---
+import AdminLayout from "../../components/Layouts/AdminLayout.astro";
+import { Badge } from "@goldshore/ui";
+---
+
+<AdminLayout>
+  <h1>Bindings Status</h1>
+
+  <table class="bindings-table">
+    <thead>
+      <tr>
+        <th>Binding Name</th>
+        <th>Type</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CONTROL_LOGS</td>
+        <td>KV Namespace</td>
+        <td><Badge variant="success">Connected</Badge></td>
+      </tr>
+      <tr>
+        <td>GoldShore-Admin-ZT</td>
+        <td>Service Token</td>
+        <td><Badge variant="success">Active</Badge></td>
+      </tr>
+      <tr>
+        <td>DB_MAIN</td>
+        <td>D1 Database</td>
+        <td><Badge variant="success">Connected</Badge></td>
+      </tr>
+    </tbody>
+  </table>
+</AdminLayout>
+
+<style>
+  .bindings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 2rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  th {
+    color: var(--gs-text-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+  }
+</style>

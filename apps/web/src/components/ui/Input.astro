@@ -1,0 +1,39 @@
+---
+interface Props {
+  type?: "text" | "email" | "password";
+  placeholder?: string;
+  label?: string;
+}
+const { type = "text", placeholder, label } = Astro.props;
+---
+<div class="input-group">
+  {label && <label>{label}</label>}
+  <input type={type} placeholder={placeholder} />
+</div>
+<style>
+  .input-group {
+    margin-bottom: 1rem;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gs-text-soft);
+  }
+  input {
+    width: 100%;
+    padding: 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--gs-radius-sm);
+    color: var(--gs-text);
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--gs-gold);
+    background: rgba(255,255,255,0.08);
+  }
+</style>

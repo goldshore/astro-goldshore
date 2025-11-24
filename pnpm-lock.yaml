@@ -134,7 +134,11 @@ importers:
 
   packages/theme: {}
 
-  packages/ui: {}
+  packages/ui:
+    dependencies:
+      '@goldshore/theme':
+        specifier: workspace:*
+        version: link:../theme
 
   packages/utils: {}
 

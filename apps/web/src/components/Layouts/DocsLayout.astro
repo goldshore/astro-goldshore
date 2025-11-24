@@ -1,0 +1,92 @@
+---
+import Navbar from "../ui/Navbar.astro";
+import "@goldshore/theme/index.css";
+
+const docs = [
+  { label: "Overview", href: "/developer/docs" },
+  { label: "API", href: "/developer/docs/api" },
+  { label: "Workers", href: "/developer/docs/workers" },
+];
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Developer Docs - GoldShore" } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <Navbar />
+
+    <div class="docs-container">
+      <aside>
+        <nav>
+          {docs.map((d) => (
+            <a href={d.href} class={Astro.url.pathname === d.href ? 'active' : ''}>{d.label}</a>
+          ))}
+        </nav>
+      </aside>
+      <main>
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  body {
+    background: var(--gs-bg);
+    color: var(--gs-text);
+    font-family: system-ui, sans-serif;
+    margin: 0;
+  }
+  .docs-container {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    max-width: 1280px;
+    margin: 0 auto;
+    gap: 3rem;
+    padding: 2rem;
+  }
+
+  aside {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+  }
+
+  aside nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  aside nav a {
+    padding: 0.6rem 1rem;
+    border-radius: var(--gs-radius-sm);
+    color: var(--gs-text-soft);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  aside nav a:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--gs-text);
+  }
+
+  aside nav a.active {
+    background: var(--gs-gold-soft);
+    color: var(--gs-gold);
+    font-weight: 500;
+  }
+
+  main {
+    min-width: 0; /* Prevents overflow in grid items */
+  }
+</style>

@@ -1,0 +1,63 @@
+---
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  href?: string;
+  class?: string;
+  [key: string]: any;
+}
+
+const { variant = 'primary', href, class: className, ...rest } = Astro.props;
+
+const Element = href ? 'a' : 'button';
+---
+
+<Element href={href} class:list={["gs-button", `variant-${variant}`, className]} {...rest}>
+  <slot />
+</Element>
+
+<style>
+  .gs-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--gs-radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+  }
+
+  .variant-primary {
+    background: var(--gs-gold);
+    color: #000;
+  }
+  .variant-primary:hover {
+    background: #f0c050;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(227, 179, 65, 0.3);
+  }
+
+  .variant-secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--gs-text);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .variant-secondary:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+  }
+
+  .variant-ghost {
+    background: transparent;
+    color: var(--gs-text-muted);
+  }
+  .variant-ghost:hover {
+    color: var(--gs-text);
+    background: rgba(255,255,255,0.05);
+  }
+</style>

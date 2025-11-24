@@ -1,35 +1,5 @@
 ---
-const { tone = "neutral" } = Astro.props; // "neutral" | "gold" | "blue"
+import { Badge } from "@goldshore/ui";
+const props = Astro.props;
 ---
-
-<span class={`gs-badge gs-badge-${tone}`}>
-  <slot />
-</span>
-
-<style>
-  .gs-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.18rem 0.6rem;
-    border-radius: var(--gs-radius-pill);
-    font-size: 0.7rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--gs-text-soft);
-  }
-
-  .gs-badge-gold {
-    border-color: rgba(227, 179, 65, 0.6);
-    background: var(--gs-gold-soft);
-    color: var(--gs-gold);
-  }
-
-  .gs-badge-blue {
-    border-color: rgba(79, 180, 255, 0.6);
-    background: var(--gs-blue-soft);
-    color: var(--gs-blue);
-  }
-</style>
+<Badge {...props}><slot /></Badge>
