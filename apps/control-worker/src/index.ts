@@ -1,14 +1,23 @@
-import { syncDNS } from "./tasks/syncDNS";
-import { rotateKeys } from "./tasks/rotateKeys";
+import { Hono } from 'hono';
 
-export interface Env {
+type Env = {
   CONTROL_LOGS: KVNamespace;
-}
+  STATE: R2Bucket;
+  API: Fetcher;
+  GATEWAY: Fetcher;
+};
 
+const app = new Hono<{ Bindings: Env }>();
+
+app.get('/health', (c) => {
+  return c.json({ status: 'ok', service: 'gs-control' });
+});
+
+// Example cron handler – Cloudflare will call this entrypoint
 export default {
-  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    await env.CONTROL_LOGS.put(Date.now().toString(), "control-run");
-    await syncDNS(env);
-    await rotateKeys(env);
+  fetch: app.fetch,
+  scheduled: async (event: ScheduledEvent, env: Env, ctx: ExecutionContext) => {
+    const ts = new Date().toISOString();
+    await env.CONTROL_LOGS.put(`cron:${ts}`, `control cron ran at ${ts}`);
   }
 };

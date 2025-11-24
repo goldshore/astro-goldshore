@@ -1,27 +1,31 @@
-import { Hono } from "hono";
+import { Hono } from 'hono';
 
-type Bindings = {
+type Env = {
   KV: KVNamespace;
-  ASSETS: R2Bucket;
   DB: D1Database;
-  AI: any; // Using 'any' to be safe, or 'Ai' if sure. Scaffold used 'Ai'.
+  ASSETS: R2Bucket;
+  AI: any; // Cloudflare AI binding
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+const app = new Hono<{ Bindings: Env }>();
 
-app.get("/health", (c) => c.json({ ok: true, service: "gs-api" }));
+app.get('/health', (c) => {
+  return c.json({ status: 'ok', service: 'gs-api' });
+});
 
-app.get("/v1/hello", (c) =>
-  c.json({
-    message: "Hello from gs-api",
+app.get('/v1/info', (c) => {
+  return c.json({
+    name: 'GoldShore API',
+    version: '0.0.1',
     time: new Date().toISOString()
-  })
-);
+  });
+});
 
-// Merged routes from previous work
-app.get('/v1/users', (c) => c.json({ users: ['user1', 'user2'] }))
-app.get('/v1/agents', (c) => c.json({ agents: ['agent-alpha', 'agent-beta'] }))
-app.get('/v1/models', (c) => c.json({ models: ['gpt-4', 'claude-3'] }))
-app.get('/v1/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
+// Example KV test route
+app.get('/v1/kv/:key', async (c) => {
+  const key = c.req.param('key');
+  const value = await c.env.KV.get(key);
+  return c.json({ key, value });
+});
 
 export default app;

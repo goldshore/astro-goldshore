@@ -1,22 +1,33 @@
 name = "gs-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
+node_compat = true
 
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = true
+
+# Public API routes (you will later add a custom domain like api.goldshore.ai)
+routes = [
+  # uncomment when you wire DNS:
+  # { pattern = "api.goldshore.ai/*", zone_name = "goldshore.ai" }
+]
+
+# ---- KV for metadata / cache -----------------------------------
 [[kv_namespaces]]
 binding = "KV"
-id = "gs_api_kv_001"
+id = "gs_api_kv_001"         # create in Dashboard → Workers → KV
 
+# ---- R2 for files/uploads --------------------------------------
 [[r2_buckets]]
 binding = "ASSETS"
 bucket_name = "gs-api-assets"
 
+# ---- D1 for relational data ------------------------------------
 [[d1_databases]]
 binding = "DB"
 database_name = "gs_prod"
 database_id = "gs_prod_db_001"
 
+# ---- AI Gateway (optional, can be wired later) -----------------
 [ai]
 binding = "AI"
-
-[observability]
-enabled = true

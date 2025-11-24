@@ -67,29 +67,29 @@ importers:
         version: 4.10.6
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20241112.0
+        specifier: ^4.20241106.0
         version: 4.20251121.0
       typescript:
-        specifier: ^5.9.3
+        specifier: ^5.5.0
         version: 5.9.3
       wrangler:
-        specifier: ^3.92.0
+        specifier: ^3.101.0
         version: 3.114.15(@cloudflare/workers-types@4.20251121.0)
 
   apps/control-worker:
     dependencies:
-      '@goldshore/utils':
-        specifier: workspace:*
-        version: link:../../packages/utils
+      hono:
+        specifier: ^4.6.0
+        version: 4.10.6
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.0.0
+        specifier: ^4.20241106.0
         version: 4.20251121.0
       typescript:
-        specifier: ^5.0.0
+        specifier: ^5.5.0
         version: 5.9.3
       wrangler:
-        specifier: ^3.0.0
+        specifier: ^3.101.0
         version: 3.114.15(@cloudflare/workers-types@4.20251121.0)
 
   apps/gateway:
@@ -99,13 +99,13 @@ importers:
         version: 4.10.6
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4.20241112.0
+        specifier: ^4.20241106.0
         version: 4.20251121.0
       typescript:
-        specifier: ^5.9.3
+        specifier: ^5.5.0
         version: 5.9.3
       wrangler:
-        specifier: ^3.92.0
+        specifier: ^3.101.0
         version: 3.114.15(@cloudflare/workers-types@4.20251121.0)
 
   apps/goldshore-agent:

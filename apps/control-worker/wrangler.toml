@@ -1,10 +1,31 @@
 name = "gs-control"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2024-11-01"
+node_compat = true
 
-[observability]
-enabled = true
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = true
+
+# No public routes yet – this is internal / cron-only by default.
+
+# Optional: cron trigger to run maintenance
+[triggers]
+crons = ["0 * * * *"] # every hour
 
 [[kv_namespaces]]
 binding = "CONTROL_LOGS"
-id = "CONTROL_LOGS_ID" # Replace with actual ID in production
+id = "gs_control_logs_001"
+
+[[r2_buckets]]
+binding = "STATE"
+bucket_name = "gs-control-state"
+
+[[services]]
+binding = "API"
+service = "gs-api"
+environment = "production"
+
+[[services]]
+binding = "GATEWAY"
+service = "gs-gateway"
+environment = "production"

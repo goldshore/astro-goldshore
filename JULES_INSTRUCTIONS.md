@@ -24,3 +24,27 @@ The monorepo is organized as follows:
 ## Development
 - Run `pnpm install` to setup dependencies.
 - Use `pnpm dev` in app directories to start local servers.
+
+## Workers Integration Rules
+
+When the user asks for changes to:
+
+- `gs-api` → edit only `apps/api-worker/**`
+- `gs-gateway` → edit only `apps/gateway/**`
+- `gs-control` → edit only `apps/control-worker/**`
+
+Do NOT:
+- Modify `apps/web` or `apps/admin` when working on Workers.
+- Create new Workers or Pages projects unless explicitly asked.
+- Add `wrangler.toml` at repo root.
+- Change build commands for existing Cloudflare Pages projects.
+
+Deploy rules:
+- For `gs-api`, run from repo root: `cd apps/api-worker && pnpm deploy`
+- For `gs-gateway`, run: `cd apps/gateway && pnpm deploy`
+- For `gs-control`, run: `cd apps/control-worker && pnpm deploy`
+
+Config rules:
+- Keep `wrangler.toml` inside each worker folder only.
+- Use `name` = `gs-api`, `gs-gateway`, `gs-control` to match existing Cloudflare services.
+- Bindings: `KV`, `DB`, `ASSETS`, `CONTROL_LOGS`, `STATE`, `API`, `GATEWAY`, `AI` must be defined in `wrangler.toml` before use.
