@@ -1,21 +1,10 @@
 name = "gs-control"
 main = "src/index.ts"
-compatibility_date = "2024-11-01"
+compatibility_date = "2024-01-01"
+
+[observability]
+enabled = true
 
 [[kv_namespaces]]
 binding = "CONTROL_LOGS"
-id = "gs_control_logs_001"
-
-[[r2_buckets]]
-binding = "STATE"
-bucket_name = "gs-control-state"
-
-[[services]]
-binding = "API"
-service = "gs-api"
-environment = "production"
-
-[[services]]
-binding = "GATEWAY"
-service = "gs-gateway"
-environment = "production"
+id = "CONTROL_LOGS_ID" # Replace with actual ID in production

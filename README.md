@@ -7,10 +7,10 @@ This is the official pnpm-based monorepo for the GoldShore organization. It cont
 The monorepo is organized into the following workspaces:
 
 - **`apps/`**: Contains the individual, deployable applications.
-  - `gs-web`: The main public-facing Astro website and user portal.
-  - `gs-admin`: The Astro-based administration dashboard.
-  - `gs-api`: A Hono-based API running on Cloudflare Workers.
-  - `gs-gateway`: A Cloudflare Worker for background jobs and queue processing.
+  - `goldshore-web`: The main public-facing Astro website and user portal.
+  - `goldshore-admin`: The Astro-based administration dashboard.
+  - `goldshore-api`: A Hono-based API running on Cloudflare Workers.
+  - `goldshore-agent`: A Cloudflare Worker for background jobs and queue processing.
 
 - **`packages/`**: Contains shared code and configurations used across different applications.
   - `ui`: Shared UI components, design tokens, and styles.
