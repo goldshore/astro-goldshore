@@ -3,9 +3,10 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "pnpm build:openapi && astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build:openapi": "node scripts/build-openapi.mjs",
+    "build": "pnpm build:openapi && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -14,5 +15,8 @@
     "@astrojs/cloudflare": "^12.6.11",
     "@goldshore/theme": "workspace:*",
     "@goldshore/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "yaml": "^2.3.4"
   }
 }

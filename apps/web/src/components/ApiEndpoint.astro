@@ -1,0 +1,16 @@
+---
+const { openapi, endpoint } = Astro.props;
+const pathItem = openapi.paths['/' + endpoint] || openapi.paths[endpoint];
+---
+<div class="endpoint">
+  <h2>{endpoint}</h2>
+  {pathItem ? (
+    <pre>{JSON.stringify(pathItem, null, 2)}</pre>
+  ) : (
+    <p>Endpoint not found.</p>
+  )}
+</div>
+<style>
+  .endpoint { padding: 2rem; }
+  pre { background: var(--gs-bg-elevated); padding: 1rem; border-radius: var(--gs-radius-md); }
+</style>

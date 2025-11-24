@@ -1,51 +1,33 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Button from "../components/ui/Button.astro";
-import Badge from "../components/ui/Badge.astro";
-import Card from "../components/ui/Card.astro";
-import Section from "../components/ui/Section.astro";
-import Stat from "../components/ui/Stat.astro";
-
-const API = import.meta.env.PUBLIC_API ?? "https://api.goldshore.ai";
-const GATEWAY = import.meta.env.PUBLIC_GATEWAY ?? "https://gw.goldshore.ai";
+import MarketingLayout from '../layouts/MarketingLayout.astro';
 ---
 
-<WebLayout title="GoldShore – Secure AI Infra">
-  <Section align="center" max="lg">
-    <Badge tone="gold">Now live on Cloudflare</Badge>
-    <h1>Unified control plane for APIs, workers & AI agents.</h1>
-    <p style="color: var(--gs-text-soft); max-width: 540px; margin: 0 auto;">
-      GoldShore connects your Cloudflare Workers, Pages, Access policies, and AI pipelines into a
-      single, observable surface.
-    </p>
-    <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.4rem;">
-      <Button href="/developer/docs" variant="primary">Read the Docs</Button>
-      <Button href="https://admin.goldshore.ai" variant="ghost">Open Admin</Button>
-    </div>
-  </Section>
+<MarketingLayout title="Goldshore | Shaping Waves">
+  <!-- Your hero & feature sections from PR reconstructed into Astro -->
+  <section class="hero">
+    <h1>Shaping <span>Waves</span></h1>
+    <p class="tag">System Status: Operational</p>
+  </section>
+</MarketingLayout>
 
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
-      <Card tone="gold">
-        <h3>API Worker</h3>
-        <p>Primary business logic running on <code>gs-api</code> with KV, R2 and D1 bindings.</p>
-      </Card>
-      <Card tone="blue">
-        <h3>Gateway</h3>
-        <p>Request routing, rate limiting, and cross-service orchestration using <code>gs-gateway</code>.</p>
-      </Card>
-      <Card>
-        <h3>Control Worker</h3>
-        <p>Automates DNS, bindings, previews and infra sync for all GoldShore projects.</p>
-      </Card>
-    </div>
-  </Section>
-
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:1rem;">
-      <Stat label="Median Edge Latency" value="23 ms" hint="Measured via Cloudflare POPs" />
-      <Stat label="Regions" value="275+" hint="Global anycast network coverage" />
-      <Stat label="Failure Budget" value="99.9%" hint="Designed for production workloads" />
-    </div>
-  </Section>
-</WebLayout>
+<style>
+  .hero {
+    text-align: center;
+    padding: 8rem 2rem;
+  }
+  h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  span {
+    background: linear-gradient(to right, var(--gs-cyan), var(--gs-lime));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tag {
+    color: var(--gs-lime);
+    font-family: monospace;
+    margin-top: 2rem;
+  }
+</style>
