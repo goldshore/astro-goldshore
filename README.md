@@ -21,6 +21,19 @@ The monorepo uses:
 
 ---
 
+- **`apps/`**: Contains the individual, deployable applications.
+  - `web`: The main public-facing Astro website and user portal.
+  - `admin`: The Astro-based administration dashboard.
+  - `api-worker`: A Hono-based API running on Cloudflare Workers.
+  - `gateway`: A Cloudflare Worker for background jobs and queue processing.
+  - `control-worker`: Internal API for infrastructure operations.
+
+- **`packages/`**: Contains shared code and configurations used across different applications.
+  - `ui`: Shared UI components, design tokens, and styles.
+  - `config`: Shared configurations for tools like ESLint and TypeScript.
+  - `utils`: Shared TypeScript utility functions.
+  - `auth`: Helpers for Cloudflare Access authentication and authorization.
+  - `theme`: Design tokens and assets.
 ---
 
 GoldShore Brand Variants
