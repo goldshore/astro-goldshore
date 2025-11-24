@@ -1,27 +1,27 @@
-import { Hono } from 'hono';
-import users from './routes/users';
-import health from './routes/health';
-import ai from './routes/ai';
+import { Hono } from "hono";
 
-const app = new Hono();
+type Bindings = {
+  KV: KVNamespace;
+  ASSETS: R2Bucket;
+  DB: D1Database;
+  AI: any; // Using 'any' to be safe, or 'Ai' if sure. Scaffold used 'Ai'.
+};
 
-app.route('/health', health);
-app.route('/users', users);
-app.route('/ai', ai);
+const app = new Hono<{ Bindings: Bindings }>();
 
-app.get('/', (c) => c.text('GoldShore API'))
+app.get("/health", (c) => c.json({ ok: true, service: "gs-api" }));
 
-// Health check
-app.get('/health', (c) => c.json({ status: 'ok', service: 'gs-api' }))
+app.get("/v1/hello", (c) =>
+  c.json({
+    message: "Hello from gs-api",
+    time: new Date().toISOString()
+  })
+);
 
-// V1 Routes
-const v1 = new Hono<{ Bindings: Env }>()
-
-v1.get('/users', (c) => c.json({ users: ['user1', 'user2'] }))
-v1.get('/agents', (c) => c.json({ agents: ['agent-alpha', 'agent-beta'] }))
-v1.get('/models', (c) => c.json({ models: ['gpt-4', 'claude-3'] }))
-v1.get('/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
-
-app.route('/v1', v1)
+// Merged routes from previous work
+app.get('/v1/users', (c) => c.json({ users: ['user1', 'user2'] }))
+app.get('/v1/agents', (c) => c.json({ agents: ['agent-alpha', 'agent-beta'] }))
+app.get('/v1/models', (c) => c.json({ models: ['gpt-4', 'claude-3'] }))
+app.get('/v1/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
 
 export default app;

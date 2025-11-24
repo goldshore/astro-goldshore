@@ -1,11 +1,26 @@
 ---
-import WebLayout from '../layouts/WebLayout.astro';
+const API = import.meta.env.PUBLIC_API;
+const GW = import.meta.env.PUBLIC_GATEWAY;
 ---
 
-<WebLayout title="GoldShore — AI Infrastructure">
-  <section class="hero" style="padding: 2rem;">
-    <h1>GoldShore</h1>
-    <p>The infrastructure layer for AI businesses.</p>
-    <a href="/developer/docs">API Documentation →</a>
-  </section>
-</WebLayout>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GoldShore · HQ</title>
+  </head>
+  <body>
+    <main>
+      <h1>GoldShore HQ</h1>
+      <p>Primary entry point for goldshore.ai</p>
+
+      <section>
+        <h2>API Endpoints</h2>
+        <ul>
+          <li>API base: {API}</li>
+          <li>Gateway: {GW}</li>
+        </ul>
+        <a href="https://admin.goldshore.ai">Go to Admin</a>
+      </section>
+    </main>
+  </body>
+</html>

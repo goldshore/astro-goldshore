@@ -1,13 +1,25 @@
 ---
-import AdminLayout from "../layouts/AdminLayout.astro";
+const env = import.meta.env.PUBLIC_APP_ENV ?? "development";
 ---
 
-<AdminLayout title="Dashboard">
-  <h1>Admin Dashboard</h1>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GoldShore Admin</title>
+  </head>
+  <body>
+    <main>
+      <h1>GoldShore Admin Cockpit</h1>
+      <p>Environment: {env}</p>
 
-  <ul>
-    <li><a href="/logs">System Logs</a></li>
-    <li><a href="/users">User Management</a></li>
-    <li><a href="/config">System Configuration</a></li>
-  </ul>
-</AdminLayout>
+      <section>
+        <h2>Quick links</h2>
+        <ul>
+          <li><a href="https://goldshore.ai">Public site</a></li>
+          <li><a href="https://api.goldshore.ai/health">API health</a></li>
+          <li><a href="https://gw.goldshore.ai/health">Gateway health</a></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>

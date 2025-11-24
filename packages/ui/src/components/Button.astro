@@ -1,0 +1,19 @@
+---
+const { href, label } = Astro.props;
+---
+
+<a class="gs-btn" href={href}>{label}</a>
+
+<style>
+  .gs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: var(--gs-accent);
+    color: black;
+    font-weight: 600;
+    text-decoration: none;
+  }
+</style>
