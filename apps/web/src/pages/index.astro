@@ -1,70 +1,17 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Button from "../components/ui/Button.astro";
-import Card from "../components/ui/Card.astro";
-import Section from "../components/ui/Section.astro";
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import Hero from '../components/Hero.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
+
+const features = [
+  { title: 'Unified API', body: 'API, gateway, AI Workers, and automation in one unified fabric.'},
+  { title: 'Admin UI', body: 'Control infra, trading, routing, logs, and tenants.'},
+  { title: 'Secure by Default', body: 'Cloudflare Zero Trust, Access, JWT, and audit trails.'},
+  { title: 'Developer First', body: 'Docs, SDKs, CLI, and instant key provisioning.'}
+];
 ---
 
-<WebLayout title="GoldShore – The Cloudflare-Native Control Plane">
-  <div class="hero">
-    <h1>
-      Deploy Intelligence to the <span class="gold">Edge</span>
-    </h1>
-    <p class="subtitle">
-      GoldShore is the unified control plane for your AI agents, workers, and infrastructure.
-      Built natively on Cloudflare.
-    </p>
-    <div class="cta-group">
-      <Button href="/developer/docs" variant="primary">Read the Docs</Button>
-      <Button href="https://github.com/goldshore/astro-goldshore" variant="secondary">View on GitHub</Button>
-    </div>
-  </div>
-
-  <Section>
-    <div class="grid">
-      <Card title="Global Edge">
-        <p>Deploy your logic instantly to 300+ cities worldwide with zero cold starts.</p>
-      </Card>
-      <Card title="Zero Trust">
-        <p>Built-in identity and access management for every service you deploy.</p>
-      </Card>
-      <Card title="Unified API">
-        <p>Control DNS, Workers, and AI models through a single, typed API surface.</p>
-      </Card>
-    </div>
-  </Section>
-
-</WebLayout>
-
-<style>
-  .hero {
-    text-align: center;
-    padding: 6rem 0;
-  }
-  h1 {
-    font-size: 3.5rem;
-    line-height: 1.1;
-    margin-bottom: 1.5rem;
-    letter-spacing: -0.03em;
-  }
-  .gold {
-    color: var(--gs-gold);
-    text-shadow: 0 0 30px rgba(227, 179, 65, 0.4);
-  }
-  .subtitle {
-    font-size: 1.25rem;
-    max-width: 600px;
-    margin: 0 auto 2.5rem;
-    color: var(--gs-text-soft);
-  }
-  .cta-group {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-  }
-</style>
+<MarketingLayout title="GoldShore – Intelligent Infrastructure">
+  <Hero />
+  <FeatureGrid items={features} />
+</MarketingLayout>

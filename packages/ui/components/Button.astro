@@ -1,63 +1,39 @@
 ---
-interface Props {
-  variant?: 'primary' | 'secondary' | 'ghost';
-  href?: string;
-  class?: string;
-  [key: string]: any;
-}
-
-const { variant = 'primary', href, class: className, ...rest } = Astro.props;
-
-const Element = href ? 'a' : 'button';
+const { kind = 'primary', size = 'md', href } = Astro.props;
+const Tag = href ? 'a' : 'button';
 ---
 
-<Element href={href} class:list={["gs-button", `variant-${variant}`, className]} {...rest}>
+<Tag class={`gs-btn ${kind} ${size}`} href={href}>
   <slot />
-</Element>
+</Tag>
 
 <style>
-  .gs-button {
+  .gs-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.6rem 1.2rem;
-    border-radius: var(--gs-radius-sm);
-    font-weight: 500;
+    padding: var(--gs-space-2) var(--gs-space-4);
+    border-radius: var(--gs-radius-md);
+    font-size: 0.9rem;
     cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s ease;
     border: none;
-    font-family: inherit;
-    font-size: 0.95rem;
-    line-height: 1;
+    transition: var(--gs-trans);
   }
 
-  .variant-primary {
-    background: var(--gs-gold);
-    color: #000;
-  }
-  .variant-primary:hover {
-    background: #f0c050;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(227, 179, 65, 0.3);
+  .primary {
+    background: linear-gradient(90deg, var(--gs-lime), var(--gs-cyan));
+    color: #020617;
+    font-weight: 600;
   }
 
-  .variant-secondary {
-    background: rgba(255,255,255,0.05);
-    color: var(--gs-text);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .variant-secondary:hover {
-    background: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.2);
+  .secondary {
+    border: 1px solid var(--gs-border-strong);
+    background: var(--gs-bg-panel);
+    color: var(--gs-fg-muted);
   }
 
-  .variant-ghost {
+  .ghost {
     background: transparent;
-    color: var(--gs-text-muted);
-  }
-  .variant-ghost:hover {
-    color: var(--gs-text);
-    background: rgba(255,255,255,0.05);
+    color: var(--gs-fg-muted);
   }
 </style>

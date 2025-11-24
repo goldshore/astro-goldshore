@@ -1,24 +1,17 @@
 ---
-import DocsLayout from "../../../components/Layouts/DocsLayout.astro";
-import CodeBlock from "../../../components/ui/CodeBlock.astro";
+import DocsLayout from '../../../layouts/DocsLayout.astro';
 ---
 
-<DocsLayout title="Developer Docs">
-  <h1>Developer Documentation</h1>
+<DocsLayout title="GoldShore Documentation">
+  <h1>Overview</h1>
+  <p>Everything begins with the API.</p>
 
-  <p>GoldShore exposes a fully Cloudflare-native API that allows you to programmatically control your infrastructure. All endpoints are secured via Service Tokens or Mutual TLS.</p>
+  <h2 id="api">API Base</h2>
+  <pre>GET {import.meta.env.PUBLIC_API}/system/info</pre>
 
-  <h2>Getting Started</h2>
-  <p>To verify the health of the API, you can make a simple GET request to the health endpoint.</p>
+  <h2 id="gateway">Gateway</h2>
+  <pre>{import.meta.env.PUBLIC_GATEWAY}/api/* → gs-api</pre>
 
-  <CodeBlock lang="bash">
-curl https://api.goldshore.ai/v1/health
-  </CodeBlock>
-
-  <h2>Authentication</h2>
-  <p>Include your API token in the <code>Authorization</code> header.</p>
-
-  <CodeBlock lang="bash">
-curl -H "Authorization: Bearer YOUR_TOKEN" https://api.goldshore.ai/v1/agents
-  </CodeBlock>
+  <h2 id="auth">Auth</h2>
+  <p>Uses Cloudflare Access JWT (aud: goldshore-admin).</p>
 </DocsLayout>

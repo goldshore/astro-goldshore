@@ -1,23 +1,39 @@
 :root {
-  --gs-bg: #050509;
-  --gs-surface: #0b0b14;
-  --gs-surface-alt: #11111d;
+  --gs-font: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
 
-  --gs-gold: #e3b341;
-  --gs-gold-soft: rgba(227, 179, 65, 0.22);
+  /* Color Palette — GoldShore Spectrum */
+  --gs-bg: #020617;
+  --gs-bg-panel: #0f172a;
+  --gs-bg-elevated: #1e293b;
 
-  --gs-blue: #4fb4ff;
-  --gs-blue-soft: rgba(79, 180, 255, 0.22);
+  --gs-fg: #f8fafc;
+  --gs-fg-muted: #94a3b8;
 
-  --gs-text: #f0f0f2;
-  --gs-text-soft: #c9c9d7;
-  --gs-text-muted: #85859a;
+  /* Brand Colors (Penrose + Aurora) */
+  --gs-cyan: #22d3ee;
+  --gs-purple: #a855f7;
+  --gs-gold: #facc15;
+  --gs-lime: #22c55e;
 
-  --gs-radius-xs: 4px;
-  --gs-radius-sm: 8px;
-  --gs-radius-md: 12px;
-  --gs-radius-lg: 18px;
-  --gs-radius-pill: 999px;
+  --gs-border: rgba(148,163,184,0.25);
+  --gs-border-strong: rgba(148,163,184,0.4);
 
-  --gs-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.4);
+  /* Radii */
+  --gs-radius-sm: 6px;
+  --gs-radius-md: 10px;
+  --gs-radius-lg: 16px;
+
+  /* Spacing scale */
+  --gs-space-1: 0.25rem;
+  --gs-space-2: 0.5rem;
+  --gs-space-3: 0.75rem;
+  --gs-space-4: 1rem;
+  --gs-space-5: 1.25rem;
+  --gs-space-6: 1.5rem;
+
+  /* Shadows */
+  --gs-shadow: 0 4px 16px rgba(0,0,0,0.3);
+
+  /* Transitions */
+  --gs-trans: 120ms ease;
 }

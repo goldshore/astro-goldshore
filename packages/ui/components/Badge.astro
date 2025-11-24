@@ -1,26 +1,23 @@
 ---
-interface Props {
-  variant?: 'default' | 'success' | 'warning' | 'error' | 'neutral';
-}
-const { variant = 'default' } = Astro.props;
+const { color = 'cyan' } = Astro.props;
 ---
-<span class:list={["gs-badge", `variant-${variant}`]}>
+
+<span class={`gs-badge ${color}`}>
   <slot />
 </span>
+
 <style>
   .gs-badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: var(--gs-radius-pill);
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--gs-radius-sm);
     font-size: 0.75rem;
-    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    line-height: 1.2;
+    letter-spacing: 0.07em;
+    border: 1px solid var(--gs-border);
   }
-  .variant-default { background: rgba(79, 180, 255, 0.15); color: var(--gs-blue); }
-  .variant-neutral { background: rgba(255,255,255,0.1); color: var(--gs-text-muted); }
-  .variant-success { background: rgba(0, 255, 128, 0.15); color: #00ff80; }
-  .variant-warning { background: var(--gs-gold-soft); color: var(--gs-gold); }
-  .variant-error   { background: rgba(255, 80, 80, 0.15); color: #ff5050; }
+  .cyan { border-color: var(--gs-cyan); color: var(--gs-cyan); }
+  .gold { border-color: var(--gs-gold); color: var(--gs-gold); }
+  .purple { border-color: var(--gs-purple); color: var(--gs-purple); }
+  .green { border-color: var(--gs-lime); color: var(--gs-lime); }
+  .red { border-color: #ef4444; color: #ef4444; }
 </style>

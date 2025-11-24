@@ -1,40 +1,12 @@
----
-interface Props {
-  title?: string;
-  class?: string;
-}
-
-const { title, class: className } = Astro.props;
----
-
-<div class:list={["gs-card", className]}>
-  {title && <h3 class="gs-card-title">{title}</h3>}
+<div class="gs-card">
   <slot />
 </div>
 
 <style>
   .gs-card {
-    background: var(--gs-surface);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: var(--gs-radius-md);
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Subtle sheen effect */
-  .gs-card::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0; height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  }
-
-  .gs-card-title {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    color: var(--gs-text);
-    font-weight: 600;
+    background: var(--gs-bg-panel);
+    padding: var(--gs-space-4);
+    border-radius: var(--gs-radius-lg);
+    border: 1px solid var(--gs-border);
   }
 </style>

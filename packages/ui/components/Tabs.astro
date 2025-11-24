@@ -1,46 +1,60 @@
 ---
-interface Props {
-  items: string[];
-  active?: string;
-}
-const { items, active } = Astro.props;
+const { tabs = [] } = Astro.props;
 ---
+
 <div class="gs-tabs">
-  <div class="gs-tab-list">
-    {items.map(item => (
-      <button class:list={["gs-tab", { active: item === active }]}>
-        {item}
-      </button>
+  <div class="gs-tabs-header">
+    {tabs.map((t) => (
+      <button onclick={`showTab(event, '${t.id}')`}>{t.label}</button>
     ))}
   </div>
-  <div class="gs-tab-content">
-    <slot />
-  </div>
+
+  {tabs.map((t) => (
+    <div id={t.id} class="gs-tab" style={tabs.indexOf(t) === 0 ? 'display: block;' : 'display: none;'}>
+      <slot name={t.id} />
+    </div>
+  ))}
 </div>
+
+<script is:inline>
+  window.showTab = function(event, id) {
+    const container = event.target.closest('.gs-tabs');
+    if (!container) return;
+
+    // Deactivate all content tabs in this container
+    const contentTabs = container.querySelectorAll('.gs-tab');
+    contentTabs.forEach((el) => {
+        if (el.id === id) {
+            el.style.display = 'block';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+
+    // Optional: Update active state of buttons?
+    // The prompt didn't specify active state styles for buttons, but it's good UX.
+    // The prompt CSS has no active class for buttons.
+    // I will stick to just switching content.
+  }
+</script>
+
 <style>
-  .gs-tabs { margin: 1.5rem 0; }
-  .gs-tab-list {
+  .gs-tabs-header {
     display: flex;
-    gap: 2rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
-  .gs-tab {
-    background: none;
-    border: none;
-    color: var(--gs-text-muted);
-    padding: 0.8rem 0;
+  .gs-tabs-header button {
+    background: var(--gs-bg-panel);
+    border: 1px solid var(--gs-border);
+    padding: 0.45rem 1rem;
+    border-radius: var(--gs-radius-md);
+    color: var(--gs-fg-muted);
     cursor: pointer;
-    font-size: 0.95rem;
-    font-weight: 500;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    font-family: inherit;
   }
-  .gs-tab.active {
-    color: var(--gs-gold);
-    border-bottom-color: var(--gs-gold);
-  }
-  .gs-tab:hover:not(.active) {
-    color: var(--gs-text);
+  .gs-tabs-header button:hover {
+      background: var(--gs-bg-elevated);
+      color: var(--gs-fg);
   }
 </style>

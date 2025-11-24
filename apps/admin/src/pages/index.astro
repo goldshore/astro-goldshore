@@ -1,23 +1,25 @@
 ---
-import AdminLayout from "../components/Layouts/AdminLayout.astro";
-import AdminCard from "../components/ui/AdminCard.astro";
+const env = import.meta.env.PUBLIC_APP_ENV ?? "development";
 ---
 
-<AdminLayout>
-  <h1>System Dashboard</h1>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GoldShore Admin</title>
+  </head>
+  <body>
+    <main>
+      <h1>GoldShore Admin Cockpit</h1>
+      <p>Environment: {env}</p>
 
-  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:1.5rem;">
-    <AdminCard title="Worker Status">
-      <span style="color: #00ff80">All healthy</span>
-    </AdminCard>
-    <AdminCard title="API Latency">
-      23 ms
-    </AdminCard>
-    <AdminCard title="KV Size">
-      12.4 MB
-    </AdminCard>
-    <AdminCard title="Active Agents">
-      3
-    </AdminCard>
-  </div>
-</AdminLayout>
+      <section>
+        <h2>Quick links</h2>
+        <ul>
+          <li><a href="https://goldshore.ai">Public site</a></li>
+          <li><a href="https://api.goldshore.ai/health">API health</a></li>
+          <li><a href="https://gw.goldshore.ai/health">Gateway health</a></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
