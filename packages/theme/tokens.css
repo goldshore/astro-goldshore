@@ -1,9 +1,23 @@
 :root {
-  --gs-bg: #020817;
-  --gs-surface: #020c1f;
-  --gs-accent: #0ea5e9;
-  --gs-accent-soft: rgba(14, 165, 233, 0.15);
-  --gs-text: #e5e7eb;
-  --gs-muted: #9ca3af;
-  --gs-radius: 12px;
+  --gs-bg: #050509;
+  --gs-surface: #0b0b14;
+  --gs-surface-alt: #11111d;
+
+  --gs-gold: #e3b341;
+  --gs-gold-soft: rgba(227, 179, 65, 0.22);
+
+  --gs-blue: #4fb4ff;
+  --gs-blue-soft: rgba(79, 180, 255, 0.22);
+
+  --gs-text: #f0f0f2;
+  --gs-text-soft: #c9c9d7;
+  --gs-text-muted: #85859a;
+
+  --gs-radius-xs: 4px;
+  --gs-radius-sm: 8px;
+  --gs-radius-md: 12px;
+  --gs-radius-lg: 18px;
+  --gs-radius-pill: 999px;
+
+  --gs-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.4);
 }

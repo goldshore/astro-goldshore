@@ -1,0 +1,31 @@
+---
+const { type = "text", placeholder, value, name } = Astro.props;
+---
+
+<input
+  type={type}
+  name={name}
+  value={value}
+  placeholder={placeholder}
+  class="gs-input"
+/>
+
+<style>
+  .gs-input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border-radius: var(--gs-radius-md);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gs-text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  .gs-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--gs-blue);
+    box-shadow: 0 0 0 2px var(--gs-blue-soft);
+  }
+</style>

@@ -1,0 +1,15 @@
+---
+import AdminLayout from "../../components/Layouts/AdminLayout.astro";
+import AdminCard from "../../components/ui/AdminCard.astro";
+---
+
+<AdminLayout>
+  <h1>System Logs</h1>
+  <AdminCard title="Recent Activity">
+    <p>No recent errors.</p>
+    <ul style="color: var(--gs-text-soft); font-size: 0.9rem;">
+      <li>[INFO] DNS sync completed</li>
+      <li>[INFO] Key rotation scheduled</li>
+    </ul>
+  </AdminCard>
+</AdminLayout>

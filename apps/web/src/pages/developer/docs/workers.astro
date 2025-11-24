@@ -1,0 +1,15 @@
+---
+import DocsLayout from "../../../components/Layouts/DocsLayout.astro";
+import CodeBlock from "../../../components/ui/CodeBlock.astro";
+---
+
+<DocsLayout title="Workers">
+  <h1>Workers</h1>
+  <p>GoldShore deploys your logic to Cloudflare Workers.</p>
+
+  <h2>Configuration</h2>
+  <CodeBlock lang="toml">
+[vars]
+ENVIRONMENT = "production"
+  </CodeBlock>
+</DocsLayout>

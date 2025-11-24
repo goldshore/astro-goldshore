@@ -1,0 +1,9 @@
+@import "./tokens.css";
+
+/* Shared reset or base styles can go here if needed */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--gs-bg);
+  color: var(--gs-text);
+}

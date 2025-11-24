@@ -1,6 +1,10 @@
 {
   "name": "@goldshore/ui",
   "version": "0.0.1",
-  "private": true,
-  "main": "src/index.ts"
+  "type": "module",
+  "main": "index.ts",
+  "files": ["components", "index.ts"],
+  "dependencies": {
+    "@goldshore/theme": "workspace:*"
+  }
 }

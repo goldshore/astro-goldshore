@@ -1,0 +1,33 @@
+---
+import Navbar from "../ui/Navbar.astro";
+import Footer from "../ui/Footer.astro";
+import "@goldshore/theme/index.css";
+
+const { title = "GoldShore", description = "GoldShore Platform" } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/goldshore.svg" />
+  </head>
+  <body>
+    <Navbar />
+
+    <main class="page-container">
+      <slot />
+    </main>
+
+    <Footer />
+  </body>
+</html>
+
+<style>
+  /* Add back the gradient that was in base.css if desired, or rely on theme */
+  body {
+    background: radial-gradient(circle at top, #12122a 0, #050509 55%, #000 100%);
+  }
+</style>

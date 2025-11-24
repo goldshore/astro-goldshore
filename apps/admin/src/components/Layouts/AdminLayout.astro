@@ -1,0 +1,51 @@
+---
+import AdminSidebar from "../ui/AdminSidebar.astro";
+import AdminTopbar from "../ui/AdminTopbar.astro";
+import "@goldshore/theme/index.css";
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GoldShore Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <AdminSidebar />
+      <div class="admin-content">
+        <AdminTopbar />
+        <main>
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background-color: var(--gs-bg);
+    color: var(--gs-text);
+    font-family: system-ui, sans-serif;
+  }
+  .admin-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .admin-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+</style>

@@ -1,0 +1,18 @@
+---
+import DocsLayout from "../../../components/Layouts/DocsLayout.astro";
+import CodeBlock from "../../../components/ui/CodeBlock.astro";
+---
+
+<DocsLayout title="API Reference">
+  <h1>API Reference</h1>
+
+  <h2>Authentication</h2>
+  <p>Include your API token in the Authorization header.</p>
+  <CodeBlock lang="bash">
+Authorization: Bearer gs_token_...
+  </CodeBlock>
+
+  <h2>Endpoints</h2>
+  <h3>GET /v1/user</h3>
+  <p>Returns current user information.</p>
+</DocsLayout>

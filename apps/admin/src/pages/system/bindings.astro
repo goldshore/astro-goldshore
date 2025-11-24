@@ -1,0 +1,17 @@
+---
+import AdminLayout from "../../components/Layouts/AdminLayout.astro";
+import AdminCard from "../../components/ui/AdminCard.astro";
+---
+
+<AdminLayout>
+  <h1>Bindings</h1>
+  <div style="display: grid; gap: 1rem;">
+    <AdminCard title="KV Namespaces">
+      <p>CONTROL_LOGS</p>
+      <p>SESSION</p>
+    </AdminCard>
+    <AdminCard title="D1 Databases">
+      <p>GS_DB</p>
+    </AdminCard>
+  </div>
+</AdminLayout>

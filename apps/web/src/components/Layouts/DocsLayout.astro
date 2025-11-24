@@ -1,0 +1,68 @@
+---
+import Navbar from "../ui/Navbar.astro";
+import "@goldshore/theme/index.css";
+
+const docs = [
+  { label: "Overview", href: "/developer/docs" },
+  { label: "API", href: "/developer/docs/api" },
+  { label: "Workers", href: "/developer/docs/workers" },
+];
+
+const { title } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title} | GoldShore Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <Navbar />
+
+    <div class="docs-container">
+      <aside>
+        <nav>
+          {docs.map((d) => (
+            <a href={d.href}>{d.label}</a>
+          ))}
+        </nav>
+      </aside>
+      <main>
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .docs-container {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    max-width: 1280px;
+    margin: 0 auto;
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  aside nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    position: sticky;
+    top: 6rem;
+  }
+
+  aside nav a {
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--gs-radius-sm);
+    color: var(--gs-text-soft);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+
+  aside nav a:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--gs-text);
+  }
+</style>
