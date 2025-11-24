@@ -1,0 +1,8 @@
+import { Env } from "../index";
+
+export async function syncDNS(env: Env) {
+  // Example DNS sync logic
+  // const res = await env.API.fetch("https://api.goldshore.ai/health");
+  // return res.ok;
+  console.log("Syncing DNS...");
+}
