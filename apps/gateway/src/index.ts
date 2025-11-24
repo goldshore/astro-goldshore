@@ -1,11 +1,22 @@
-import { handleCors } from "./cors";
-import { routeRequest } from "./router";
+import { Hono } from 'hono'
 
-export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
-    const cors = handleCors(req);
-    if (cors) return cors;
+type Env = {
+  API: Fetcher
+  GATEWAY_KV: KVNamespace
+  AI: any
+}
 
-    return routeRequest(req, env);
-  }
-};
+const app = new Hono<{ Bindings: Env }>()
+
+app.get('/health', (c) => c.json({ status: 'ok', service: 'gs-gateway' }))
+
+// Example specific routes for Gateway processing
+app.get('/user/login', (c) => c.json({ message: 'Gateway Login Placeholder' }))
+app.post('/v1/chat', (c) => c.json({ message: 'Gateway Chat Placeholder' }))
+
+// Forwarding fallback
+app.all('*', (c) => {
+  return c.env.API.fetch(c.req.raw)
+})
+
+export default app

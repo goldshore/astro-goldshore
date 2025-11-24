@@ -7,5 +7,9 @@ binding = "API"
 service = "gs-api"
 environment = "production"
 
+[[kv_namespaces]]
+binding = "GATEWAY_KV"
+id = "goldshore-gw-kv"
+
 [ai]
 binding = "AI"
