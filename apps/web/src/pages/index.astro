@@ -1,51 +1,17 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Button from "../components/ui/Button.astro";
-import Badge from "../components/ui/Badge.astro";
-import Card from "../components/ui/Card.astro";
-import Section from "../components/ui/Section.astro";
-import Stat from "../components/ui/Stat.astro";
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import Hero from '../components/Hero.astro';
+import FeatureGrid from '../components/FeatureGrid.astro';
 
-const API = import.meta.env.PUBLIC_API ?? "https://api.goldshore.ai";
-const GATEWAY = import.meta.env.PUBLIC_GATEWAY ?? "https://gw.goldshore.ai";
+const features = [
+  { title: 'Unified API', body: 'API, gateway, AI Workers, and automation in one unified fabric.'},
+  { title: 'Admin UI', body: 'Control infra, trading, routing, logs, and tenants.'},
+  { title: 'Secure by Default', body: 'Cloudflare Zero Trust, Access, JWT, and audit trails.'},
+  { title: 'Developer First', body: 'Docs, SDKs, CLI, and instant key provisioning.'}
+];
 ---
 
-<WebLayout title="GoldShore – Secure AI Infra">
-  <Section align="center" max="lg">
-    <Badge tone="gold">Now live on Cloudflare</Badge>
-    <h1>Unified control plane for APIs, workers & AI agents.</h1>
-    <p style="color: var(--gs-text-soft); max-width: 540px; margin: 0 auto;">
-      GoldShore connects your Cloudflare Workers, Pages, Access policies, and AI pipelines into a
-      single, observable surface.
-    </p>
-    <div style="display:flex; gap:0.75rem; justify-content:center; margin-top:1.4rem;">
-      <Button href="/developer/docs" variant="primary">Read the Docs</Button>
-      <Button href="https://admin.goldshore.ai" variant="ghost">Open Admin</Button>
-    </div>
-  </Section>
-
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
-      <Card tone="gold">
-        <h3>API Worker</h3>
-        <p>Primary business logic running on <code>gs-api</code> with KV, R2 and D1 bindings.</p>
-      </Card>
-      <Card tone="blue">
-        <h3>Gateway</h3>
-        <p>Request routing, rate limiting, and cross-service orchestration using <code>gs-gateway</code>.</p>
-      </Card>
-      <Card>
-        <h3>Control Worker</h3>
-        <p>Automates DNS, bindings, previews and infra sync for all GoldShore projects.</p>
-      </Card>
-    </div>
-  </Section>
-
-  <Section max="lg">
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:1rem;">
-      <Stat label="Median Edge Latency" value="23 ms" hint="Measured via Cloudflare POPs" />
-      <Stat label="Regions" value="275+" hint="Global anycast network coverage" />
-      <Stat label="Failure Budget" value="99.9%" hint="Designed for production workloads" />
-    </div>
-  </Section>
-</WebLayout>
+<MarketingLayout title="GoldShore – Intelligent Infrastructure">
+  <Hero />
+  <FeatureGrid items={features} />
+</MarketingLayout>

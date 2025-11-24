@@ -1,0 +1,56 @@
+---
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const { title = 'GoldShore Docs' } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+
+  <body class="docs-body">
+    <Nav />
+
+    <div class="docs-shell">
+      <aside class="docs-sidebar">
+        <h2>Docs</h2>
+        <a href="/developer/docs">Overview</a>
+        <a href="/developer/docs#api">API</a>
+        <a href="/developer/docs#auth">Auth</a>
+        <a href="/developer/docs#gateway">Gateway</a>
+      </aside>
+
+      <main class="docs-content">
+        <slot />
+      </main>
+    </div>
+
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .docs-body {
+    margin: 0;
+    background: #020617;
+    color: #e2e8f0;
+    font-family: system-ui, sans-serif;
+  }
+  .docs-shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    margin-top: 80px;
+  }
+  .docs-sidebar {
+    padding: 1.5rem;
+    border-right: 1px solid rgba(148,163,184,0.2);
+    background: #0f172a;
+  }
+  .docs-content {
+    padding: 2rem;
+  }
+</style>
