@@ -1,61 +1,120 @@
 ---
-import { Button } from "@goldshore/ui";
+const links = [
+  { href: "/", label: "Home" },
+  { href: "/developer/docs", label: "Docs" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+];
 ---
-<nav class="navbar">
-  <div class="container">
-    <a href="/" class="logo">
-      <span class="gold">GOLD</span>SHORE
+
+<header class="gs-nav">
+  <div class="gs-nav-inner">
+    <a href="/" class="gs-nav-logo">
+      <div class="gs-logo-dot" />
+      <span>GoldShore</span>
     </a>
-    <div class="links">
-      <a href="/about">About</a>
-      <a href="/contact">Contact</a>
-      <a href="/developer/docs">Developers</a>
-    </div>
-    <div class="actions">
-      <Button href="https://admin.goldshore.ai" variant="secondary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Console</Button>
-    </div>
+
+    <nav class="gs-nav-links">
+      {links.map((link) => (
+        <a href={link.href}>{link.label}</a>
+      ))}
+      <a href="https://admin.goldshore.ai" class="gs-nav-cta">Admin</a>
+    </nav>
   </div>
-</nav>
+</header>
+
 <style>
-  .navbar {
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    background: rgba(5, 5, 9, 0.8);
-    backdrop-filter: blur(12px);
+  .gs-nav {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 40;
+    backdrop-filter: blur(24px);
+    background: linear-gradient(
+      to bottom,
+      rgba(5, 5, 9, 0.9),
+      rgba(5, 5, 9, 0.6),
+      transparent
+    );
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
-  .container {
-    max-width: 1280px;
+
+  .gs-nav-inner {
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 0.8rem 2rem;
+    padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
   }
-  .logo {
-    font-weight: 800;
-    font-size: 1.1rem;
-    color: var(--gs-text);
-    text-decoration: none;
-    letter-spacing: -0.02em;
-    text-transform: uppercase;
+
+  .gs-nav-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
-  .gold {
-    color: var(--gs-gold);
+
+  .gs-logo-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: var(--gs-radius-md);
+    background: radial-gradient(circle at 30% 0%, #fff, var(--gs-gold));
+    box-shadow: 0 0 32px rgba(227, 179, 65, 0.6);
   }
-  .links {
+
+  .gs-nav-links {
     display: flex;
-    gap: 2rem;
-  }
-  .links a {
-    color: var(--gs-text-soft);
-    text-decoration: none;
+    align-items: center;
+    gap: 1.25rem;
     font-size: 0.9rem;
-    font-weight: 500;
-    transition: color 0.2s;
+    color: var(--gs-text-soft);
   }
-  .links a:hover {
-    color: var(--gs-text);
+
+  .gs-nav-links a {
+    position: relative;
+    padding-block: 0.25rem;
+  }
+
+  .gs-nav-links a::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -0.15rem;
+    width: 0;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--gs-gold), var(--gs-blue));
+    transition: width var(--gs-speed-fast) var(--gs-ease);
+  }
+
+  .gs-nav-links a:hover::after {
+    width: 100%;
+  }
+
+  .gs-nav-cta {
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--gs-radius-pill);
+    border: 1px solid rgba(227, 179, 65, 0.45);
+    background: radial-gradient(circle at top left, rgba(227, 179, 65, 0.25), transparent);
+    color: var(--gs-gold);
+    font-weight: 500;
+  }
+
+  .gs-nav-cta:hover {
+    border-color: rgba(227, 179, 65, 0.9);
+  }
+
+  @media (max-width: 720px) {
+    .gs-nav-inner {
+      padding-inline: 1rem;
+    }
+    .gs-nav-links {
+      gap: 0.75rem;
+      font-size: 0.8rem;
+    }
+    .gs-nav-cta {
+      display: none;
+    }
   }
 </style>

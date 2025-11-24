@@ -1,5 +1,31 @@
 ---
-import { Card } from "@goldshore/ui";
-const props = Astro.props;
+const { tone = "default" } = Astro.props; // "default" | "gold" | "blue"
 ---
-<Card {...props}><slot /></Card>
+
+<article class={`gs-card gs-card-${tone}`}>
+  <slot />
+</article>
+
+<style>
+  .gs-card {
+    border-radius: var(--gs-radius-lg);
+    padding: 1.4rem 1.5rem;
+    border: 1px solid var(--gs-border-subtle);
+    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 55%),
+      radial-gradient(circle at bottom right, rgba(79, 180, 255, 0.1), transparent 55%),
+      var(--gs-surface);
+    box-shadow: var(--gs-shadow-soft);
+  }
+
+  .gs-card-gold {
+    border-color: rgba(227, 179, 65, 0.6);
+    background: radial-gradient(circle at top left, rgba(227, 179, 65, 0.2), transparent 55%),
+      var(--gs-surface);
+  }
+
+  .gs-card-blue {
+    border-color: rgba(79, 180, 255, 0.8);
+    background: radial-gradient(circle at top left, rgba(79, 180, 255, 0.2), transparent 55%),
+      var(--gs-surface);
+  }
+</style>
