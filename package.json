@@ -7,7 +7,8 @@
     "build:openapi": "node scripts/build-openapi.mjs",
     "build": "pnpm build:openapi && turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "build:openapi": "node scripts/build-openapi.mjs"
   },
   "devDependencies": {
     "astro": "^5.15.9",
@@ -16,7 +17,7 @@
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
     "typescript": "^5.4.2",
-    "yaml": "^2.8.1"
+    "yaml": "^2.3.4"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.11",

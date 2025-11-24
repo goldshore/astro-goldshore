@@ -1,6 +1,25 @@
 ---
 import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
+// Import the data directly
+// @ts-ignore
+import openapi from '../../../data/v1.json';
+
+const { slug } = Astro.params;
+// Handle undefined slug (root /api/) if needed, or just /api/something
+const endpoint = slug || '';
+---
+
+<div class="api-container">
+  <ApiSidebar openapi={openapi} />
+  <main>
+    <ApiEndpoint openapi={openapi} endpoint={endpoint} />
+  </main>
+</div>
+
+<style>
+  .api-container { display: flex; min-height: 100vh; }
+  main { flex: 1; }
 
 const version = 'v1';
 // Assuming /openapi/v1.json as per instructions.

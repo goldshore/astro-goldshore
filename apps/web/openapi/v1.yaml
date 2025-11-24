@@ -3,6 +3,12 @@ info:
   title: GoldShore API
   version: 1.0.0
 paths:
+  /status:
+    get:
+      summary: Get system status
+      responses:
+        '200':
+          description: System is operational
   /users:
     get:
       summary: List users

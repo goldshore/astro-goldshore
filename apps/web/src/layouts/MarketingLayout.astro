@@ -1,4 +1,20 @@
 ---
+import '@goldshore/theme';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+const { title } = Astro.props;
+---
+
+<html>
+  <head>
+    <title>{title}</title>
+  </head>
+  <body>
+    <Nav />
+    <main><slot /></main>
+    <Footer />
+  </body>
+</html>
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 const { title = 'GoldShore' } = Astro.props;
