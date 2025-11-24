@@ -1,5 +1,24 @@
 ---
-import { CodeBlock } from "@goldshore/ui";
-const props = Astro.props;
+const { lang = "bash" } = Astro.props;
 ---
-<CodeBlock {...props}><slot /></CodeBlock>
+
+<pre class="gs-code">
+  <code data-lang={lang}><slot /></code>
+</pre>
+
+<style>
+  .gs-code {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    border-radius: var(--gs-radius-md);
+    background: #050509;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-family: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.8rem;
+    overflow-x: auto;
+  }
+
+  .gs-code code {
+    white-space: pre;
+  }
+</style>
