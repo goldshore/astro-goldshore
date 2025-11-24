@@ -6,7 +6,8 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "build:openapi": "node scripts/build-openapi.mjs"
   },
   "devDependencies": {
     "astro": "^5.15.9",
@@ -14,7 +15,8 @@
     "eslint-plugin-astro": "^1.5.0",
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
-    "typescript": "^5.4.2"
+    "typescript": "^5.4.2",
+    "yaml": "^2.3.4"
   },
   "packageManager": "pnpm@8.15.5",
   "dependencies": {
