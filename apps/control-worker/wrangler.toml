@@ -1,15 +1,26 @@
-name = "goldshore-control-worker"
+name = "gs-control"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
-routes = [
-  # only expose to an internal subdomain (or keep workers.dev only)
-  { pattern = "ops.goldshore.ai/*", zone_name = "goldshore.ai" }
-]
+[env.production]
+name = "gs-control"
+route = { pattern = "ops.goldshore.ai/*", custom_domain = true }
+
+[[kv_namespaces]]
+binding = "CONTROL_LOGS"
+id = "placeholder_logs_id"
+
+[[r2_buckets]]
+binding = "STATE"
+bucket_name = "gs-control-state"
+
+[[services]]
+binding = "API"
+service = "gs-api"
+
+[[services]]
+binding = "GATEWAY"
+service = "gs-gateway"
 
 [vars]
 ENVIRONMENT = "production"
-
-# Secrets to set via `wrangler secret put`
-# - CLOUDFLARE_API_TOKEN
-# - CLOUDFLARE_ACCOUNT_ID

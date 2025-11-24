@@ -1,0 +1,22 @@
+name = "gs-gateway"
+main = "src/index.ts"
+compatibility_date = "2024-03-20"
+tsconfig = "tsconfig.json"
+
+[env.dev]
+name = "gs-gateway-dev"
+
+[env.preview]
+name = "gs-gateway-preview"
+
+[env.production]
+name = "gs-gateway"
+route = { pattern = "gw.goldshore.ai/*", custom_domain = true }
+
+[[services]]
+binding = "API"
+service = "gs-api"
+environment = "production"
+
+[ai]
+binding = "AI"
