@@ -18,6 +18,9 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "openapi-typescript": "^7.10.1",
+    "swagger-client": "^3.36.0",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.1"
   }
 }
