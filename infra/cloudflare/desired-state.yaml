@@ -48,16 +48,20 @@ cloudflare:
     projects:
       - name: "astro-gs-web"
         repo: "astro-goldshore"
-        root_dir: "apps/web"
+        root_dir: "/" # Run from repo root for monorepo support
         production_branch: "main"
+        build_command: "pnpm --filter @goldshore/web build"
+        output_dir: "apps/web/dist"
         custom_domains:
           - "goldshore.ai"
           - "preview.goldshore.ai"
 
       - name: "astro-gs-admin"
         repo: "astro-goldshore"
-        root_dir: "apps/admin"
+        root_dir: "/" # Run from repo root for monorepo support
         production_branch: "main"
+        build_command: "pnpm --filter @goldshore/admin build"
+        output_dir: "apps/admin/dist"
         custom_domains:
           - "admin.goldshore.ai"
           - "admin-preview.goldshore.ai"
