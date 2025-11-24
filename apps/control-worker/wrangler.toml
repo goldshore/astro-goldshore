@@ -1,6 +1,8 @@
 name = "gs-control"
-main = "src/index.ts"
-compatibility_date = "2024-11-01"
+compatibility_date = "2024-01-01"
+
+[observability]
+enabled = true
 
 [[kv_namespaces]]
 binding = "CONTROL_LOGS"

@@ -1,3 +1,5 @@
+import { Env } from "./index";
+
 export async function routeRequest(req: Request, env: Env) {
   const url = new URL(req.url);
   const path = url.pathname;

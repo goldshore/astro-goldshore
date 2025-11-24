@@ -1,4 +1,6 @@
-# GoldShore Monorepo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 🟦 GoldShore Monorepo
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 The GoldShore Monorepo powers the entire GoldShore ecosystem, including:
 	•	Public Website (Astro + Cloudflare Pages)
@@ -19,11 +21,7 @@ The monorepo uses:
 
 ---
 
-- **`apps/`**: Contains the individual, deployable applications.
-  - `gs-web`: The main public-facing Astro website and user portal.
-  - `gs-admin`: The Astro-based administration dashboard.
-  - `gs-api`: A Hono-based API running on Cloudflare Workers.
-  - `gs-gateway`: A Cloudflare Worker for background jobs and queue processing.
+---
 
 GoldShore Brand Variants
 
