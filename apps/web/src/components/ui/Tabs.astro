@@ -1,0 +1,34 @@
+---
+const { items = [] } = Astro.props;
+// items: { label: string; href: string }[]
+---
+
+<nav class="gs-tabs">
+  {items.map((item) => (
+    <a href={item.href} class="gs-tab">
+      {item.label}
+    </a>
+  ))}
+</nav>
+
+<style>
+  .gs-tabs {
+    display: inline-flex;
+    padding: 0.25rem;
+    border-radius: var(--gs-radius-pill);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 0.25rem;
+  }
+
+  .gs-tab {
+    padding: 0.3rem 0.9rem;
+    border-radius: var(--gs-radius-pill);
+    font-size: 0.78rem;
+    color: var(--gs-text-soft);
+  }
+
+  .gs-tab:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+</style>

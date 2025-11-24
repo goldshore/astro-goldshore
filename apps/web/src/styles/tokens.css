@@ -1,0 +1,34 @@
+:root {
+  /* Brand */
+  --gs-bg: #050509;
+  --gs-surface: #0b0b14;
+  --gs-surface-alt: #10101c;
+  --gs-border-subtle: rgba(255, 255, 255, 0.08);
+
+  --gs-gold: #e3b341;
+  --gs-gold-soft: rgba(227, 179, 65, 0.16);
+  --gs-blue: #4fb4ff;
+  --gs-blue-soft: rgba(79, 180, 255, 0.16);
+
+  --gs-text: #f7f7f7;
+  --gs-text-soft: #c5c5d1;
+  --gs-text-muted: #85859a;
+
+  /* Layout */
+  --gs-radius-xs: 4px;
+  --gs-radius-sm: 8px;
+  --gs-radius-md: 12px;
+  --gs-radius-lg: 18px;
+  --gs-radius-pill: 999px;
+
+  --gs-shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.5);
+
+  /* Typography */
+  --gs-font-display: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  --gs-font-body: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+
+  /* Motion */
+  --gs-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --gs-speed-fast: 140ms;
+  --gs-speed-normal: 200ms;
+}
