@@ -1,5 +1,6 @@
 ---
 import DocsLayout from '../../../layouts/DocsLayout.astro';
+import MDXCodeBlock from '../../../components/MDXCodeBlock.astro';
 import { getCollection } from 'astro:content';
 
 export const prerender = true;
@@ -16,6 +17,6 @@ const { page } = Astro.props;
 const { Content } = await page.render();
 ---
 
-<DocsLayout title={page.data.title} page={page}>
-  <Content />
+<DocsLayout title={`${page.data.title} – GoldShore Docs`} page={page}>
+  <Content components={{ pre: MDXCodeBlock }} />
 </DocsLayout>

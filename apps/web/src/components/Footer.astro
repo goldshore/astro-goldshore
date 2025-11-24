@@ -1,12 +1,28 @@
-<footer class="gs-footer">
-  <p>&copy; 2024 GoldShore. All rights reserved.</p>
+<footer class="footer">
+  <div>© {new Date().getFullYear()} GoldShore</div>
+  <div class="links">
+    <a href="/legal/privacy">Privacy</a>
+    <a href="/legal/terms">Terms</a>
+    <a href="/developer">Developers</a>
+  </div>
 </footer>
+
 <style>
-  .gs-footer {
+  .footer {
     padding: 2rem;
-    text-align: center;
-    color: var(--gs-fg-muted);
-    border-top: 1px solid var(--gs-border);
-    margin-top: 4rem;
+    border-top: 1px solid rgba(148,163,184,0.2);
+    background: #000;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #94a3b8;
+  }
+  .links a {
+    margin-left: 1.2rem;
+    color: #94a3b8;
+    text-decoration: none;
+  }
+  .links a:hover {
+    color: #f8fafc;
   }
 </style>

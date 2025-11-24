@@ -4,3 +4,9 @@
 html {
   color-scheme: dark;
 }
+
+[data-theme="light"] {
+  --gs-bg: #ffffff;
+  --gs-fg: #020617;
+  --gs-bg-panel: #f5f6f9;
+}

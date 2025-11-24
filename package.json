@@ -1,10 +1,11 @@
 {
   "name": "astro-goldshore",
   "private": true,
-  "packageManager": "pnpm@8.15.9",
+  "packageManager": "pnpm@8.15.5",
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
+    "build:openapi": "node scripts/build-openapi.mjs",
+    "build": "pnpm build:openapi && turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "build:openapi": "node scripts/build-openapi.mjs"
@@ -18,7 +19,6 @@
     "typescript": "^5.4.2",
     "yaml": "^2.3.4"
   },
-  "packageManager": "pnpm@8.15.5",
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.11",
     "turbo": "^2.6.1"

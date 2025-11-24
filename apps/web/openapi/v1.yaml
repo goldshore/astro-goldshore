@@ -9,3 +9,27 @@ paths:
       responses:
         '200':
           description: System is operational
+  /users:
+    get:
+      summary: List users
+      description: Returns a list of users.
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+          description: Max records to return
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
