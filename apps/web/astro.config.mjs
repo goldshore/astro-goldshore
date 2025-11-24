@@ -18,6 +18,7 @@ export default defineConfig({
     port: 4321
   },
   vite: {
+    publicDir: './openapi',
     resolve: {
       alias: {
         '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
