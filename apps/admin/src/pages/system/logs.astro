@@ -1,0 +1,14 @@
+---
+import AdminLayout from "../../components/Layouts/AdminLayout.astro";
+import { CodeBlock } from "@goldshore/ui";
+---
+
+<AdminLayout>
+  <h1>System Logs</h1>
+  <p>Recent activity from the control plane.</p>
+
+  <CodeBlock lang="log" code={`[INFO] 2023-10-27 10:00:01 - Worker gs-api initialized
+[INFO] 2023-10-27 10:05:23 - Agent deployed: deployment-xyz-123
+[WARN] 2023-10-27 10:12:00 - High latency detected in region: weur
+[INFO] 2023-10-27 10:15:00 - Auto-scaling triggered`} />
+</AdminLayout>

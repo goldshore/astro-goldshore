@@ -1,37 +1,15 @@
 ---
-const { align = "left", max = "md" } = Astro.props; // align: "left" | "center"; max: "md" | "lg"
+interface Props {
+  class?: string;
+  id?: string;
+}
+const { class: className, id } = Astro.props;
 ---
-
-<section class={`gs-section gs-section-${align} gs-section-${max}`}>
-  <div class="gs-section-inner">
-    <slot />
-  </div>
+<section id={id} class:list={["section", className]}>
+  <slot />
 </section>
-
 <style>
-  .gs-section {
-    margin-block: 2.5rem;
-  }
-
-  .gs-section-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .gs-section-center {
-    text-align: center;
-  }
-
-  .gs-section-lg .gs-section-inner {
-    max-width: 860px;
-  }
-
-  .gs-section-md .gs-section-inner {
-    max-width: 640px;
-  }
-
-  .gs-section-inner {
-    margin: 0 auto;
+  .section {
+    margin: 4rem 0;
   }
 </style>

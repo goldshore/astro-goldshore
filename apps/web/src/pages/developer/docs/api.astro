@@ -1,0 +1,16 @@
+---
+import DocsLayout from "../../../components/Layouts/DocsLayout.astro";
+import CodeBlock from "../../../components/ui/CodeBlock.astro";
+---
+
+<DocsLayout title="API Reference - GoldShore">
+  <h1>API Reference</h1>
+  <p>Full reference for the GoldShore Control Plane API.</p>
+
+  <h3>Endpoints</h3>
+  <ul>
+    <li><code>GET /v1/health</code> - System status</li>
+    <li><code>GET /v1/agents</code> - List active agents</li>
+    <li><code>POST /v1/deploy</code> - Trigger a new deployment</li>
+  </ul>
+</DocsLayout>
