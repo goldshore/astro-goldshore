@@ -1,0 +1,39 @@
+---
+const { kind = 'primary', size = 'md', href } = Astro.props;
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag class={`gs-btn ${kind} ${size}`} href={href}>
+  <slot />
+</Tag>
+
+<style>
+  .gs-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--gs-space-2) var(--gs-space-4);
+    border-radius: var(--gs-radius-md);
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: var(--gs-trans);
+  }
+
+  .primary {
+    background: linear-gradient(90deg, var(--gs-lime), var(--gs-cyan));
+    color: #020617;
+    font-weight: 600;
+  }
+
+  .secondary {
+    border: 1px solid var(--gs-border-strong);
+    background: var(--gs-bg-panel);
+    color: var(--gs-fg-muted);
+  }
+
+  .ghost {
+    background: transparent;
+    color: var(--gs-fg-muted);
+  }
+</style>
