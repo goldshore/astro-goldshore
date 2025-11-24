@@ -1,8 +1,12 @@
 ---
-import WebLayout from '../layouts/WebLayout.astro';
+import WebLayout from "../components/Layouts/WebLayout.astro";
+import Section from "../components/ui/Section.astro";
 ---
 
-<WebLayout title="Contact - GoldShore">
-  <h1>Contact Us</h1>
-  <p>Get in touch with us.</p>
+<WebLayout title="Contact GoldShore">
+  <Section max="md">
+    <h1>Contact</h1>
+    <p>We'd love to hear from you. Whether you have a question about features, pricing, or need a demo, our team is ready to answer all your questions.</p>
+    <p>Email us: <a href="mailto:support@goldshore.ai" style="color: var(--gs-blue);">support@goldshore.ai</a></p>
+  </Section>
 </WebLayout>
