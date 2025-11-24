@@ -4,7 +4,7 @@ import mdx from '@astrojs/mdx';
 import rehypePrettyCode from 'rehype-pretty-code';
 
 export default defineConfig({
-  output: "server",                // for Cloudflare Pages SSR
+  output: 'server',
   adapter: cloudflare(),
   integrations: [mdx()],
   markdown: {
@@ -20,9 +20,12 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        "@ui": "@goldshore/ui",
-        "@theme": "@goldshore/theme"
+        '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
+        '@goldshore/theme': new URL('../../packages/theme/src', import.meta.url).pathname
       }
+    },
+    ssr: {
+      noExternal: ['@goldshore/ui', '@goldshore/theme']
     }
   }
 });
