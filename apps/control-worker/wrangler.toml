@@ -6,4 +6,18 @@ enabled = true
 
 [[kv_namespaces]]
 binding = "CONTROL_LOGS"
-id = "CONTROL_LOGS_ID" # Replace with actual ID in production
+id = "gs_control_logs_001"
+
+[[r2_buckets]]
+binding = "STATE"
+bucket_name = "gs-control-state"
+
+[[services]]
+binding = "API"
+service = "gs-api"
+environment = "production"
+
+[[services]]
+binding = "GATEWAY"
+service = "gs-gateway"
+environment = "production"
