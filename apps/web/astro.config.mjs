@@ -1,28 +1,17 @@
-import { defineConfig } from "astro/config";
-import cloudflare from "@astrojs/cloudflare";
-import mdx from '@astrojs/mdx';
-import rehypePrettyCode from 'rehype-pretty-code';
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
+  srcDir: './src',
   output: 'server',
   adapter: cloudflare(),
-  integrations: [mdx()],
-  markdown: {
-    syntaxHighlight: false,
-    rehypePlugins: [
-      [rehypePrettyCode, { theme: 'github-dark' }]
-    ]
-  },
-  srcDir: "src",
-  server: {
-    port: 4321
-  },
+  integrations: [],
   vite: {
     publicDir: './openapi',
     resolve: {
       alias: {
         '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
-        '@goldshore/theme': new URL('../../packages/theme/src', import.meta.url).pathname
+        '@goldshore/theme': new URL('../../packages/theme', import.meta.url).pathname
       }
     },
     ssr: {
