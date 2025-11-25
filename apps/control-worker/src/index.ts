@@ -1,14 +1,26 @@
-import { syncDNS } from "./tasks/syncDNS";
-import { rotateKeys } from "./tasks/rotateKeys";
+import { Hono } from "hono";
+import * as DNS from "./libs/dns";
+import * as Workers from "./libs/workers";
+import * as Pages from "./libs/pages";
+import * as Access from "./libs/access";
 
-export interface Env {
-  CONTROL_LOGS: KVNamespace;
-}
+const app = new Hono();
 
-export default {
-  async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
-    await env.CONTROL_LOGS.put(Date.now().toString(), "control-run");
-    await syncDNS(env);
-    await rotateKeys(env);
-  }
-};
+app.get("/", (c) => c.json({ service: "gs-control", ok: true }));
+
+app.post("/dns/apply", async (c) => {
+  const result = await DNS.sync(c.env);
+  return c.json(result);
+});
+
+app.post("/workers/reconcile", async (c) => {
+  const result = await Workers.reconcile(c.env);
+  return c.json(result);
+});
+
+app.post("/pages/deploy", async (c) => {
+  const result = await Pages.deploy(c.env);
+  return c.json(result);
+});
+
+export default app;
