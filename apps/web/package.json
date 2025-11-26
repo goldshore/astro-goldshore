@@ -13,15 +13,14 @@
     "@astrojs/mdx": "^4.3.12",
     "@goldshore/theme": "workspace:*",
     "@goldshore/ui": "workspace:*",
-    "astro": "^5.15.9",
+    "astro": "^5.16.0",
     "rehype-pretty-code": "^0.14.1",
     "remark-gfm": "^4.0.1"
-    "astro": "^5.16.0",
-    "@astrojs/cloudflare": "^12.6.11",
-    "@goldshore/ui": "workspace:*",
-    "@goldshore/theme": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "openapi-typescript": "^7.10.1",
+    "swagger-client": "^3.36.0",
+    "typescript": "^5.9.3",
+    "yaml": "^2.8.1"
   }
 }

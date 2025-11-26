@@ -1,0 +1,30 @@
+---
+const { paths, version } = Astro.props;
+---
+
+<aside class="api-sidebar">
+  <h2>API v{version}</h2>
+
+  <nav>
+    {paths.map(([path, item]) => (
+      <div class="endpoint">
+        <a href={`/developer/api/${path.replace(/^\//,'')}`}>{path}</a>
+      </div>
+    ))}
+  </nav>
+</aside>
+
+<style>
+  .api-sidebar {
+    width: 280px;
+    padding: 1.5rem;
+    border-right: 1px solid rgba(148,163,184,0.2);
+    background: #0f172a;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .endpoint a {
+    display: block;
+    padding: 0.25rem 0;
+  }
+</style>

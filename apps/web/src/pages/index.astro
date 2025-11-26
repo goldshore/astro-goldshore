@@ -1,5 +1,36 @@
 ---
 import MarketingLayout from '../layouts/MarketingLayout.astro';
+---
+
+<MarketingLayout title="Goldshore | Shaping Waves">
+  <!-- Your hero & feature sections from PR reconstructed into Astro -->
+  <section class="hero">
+    <h1>Shaping <span>Waves</span></h1>
+    <p class="tag">System Status: Operational</p>
+  </section>
+</MarketingLayout>
+
+<style>
+  .hero {
+    text-align: center;
+    padding: 8rem 2rem;
+  }
+  h1 {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  span {
+    background: linear-gradient(to right, var(--gs-cyan), var(--gs-lime));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tag {
+    color: var(--gs-lime);
+    font-family: monospace;
+    margin-top: 2rem;
+  }
+</style>
 import Hero from '../components/Hero.astro';
 import FeatureGrid from '../components/FeatureGrid.astro';
 
