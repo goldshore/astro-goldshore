@@ -7,6 +7,7 @@ export default defineConfig({
   adapter: cloudflare(),
   integrations: [],
   vite: {
+    publicDir: './openapi',
     resolve: {
       alias: {
         '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
