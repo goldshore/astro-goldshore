@@ -1,16 +1,20 @@
-import { defineConfig } from "astro/config";
-import cloudflare from "@astrojs/cloudflare";
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
-  output: "server",
+  srcDir: './src',
+  output: 'server',
   adapter: cloudflare(),
-  srcDir: "src",
+  integrations: [],
   vite: {
     resolve: {
       alias: {
-        "@ui": "@goldshore/ui",
-        "@theme": "@goldshore/theme"
+        '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
+        '@goldshore/theme': new URL('../../packages/theme', import.meta.url).pathname
       }
+    },
+    ssr: {
+      noExternal: ['@goldshore/ui', '@goldshore/theme']
     }
   }
 });
