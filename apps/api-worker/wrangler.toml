@@ -3,17 +3,17 @@ main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
 [[kv_namespaces]]
-binding = "KV"
-id = "gs_api_kv_001"
+binding = "GS_KV"
+id = "gs_api_kv_prod_001"
 
 [[r2_buckets]]
-binding = "ASSETS"
+binding = "GS_ASSETS"
 bucket_name = "gs-api-assets"
 
 [[d1_databases]]
-binding = "DB"
-database_name = "gs_prod"
-database_id = "gs_prod_db_001"
+binding = "GS_DB"
+database_name = "gs_database"
+database_id = "gs_database_id_001"
 
 [ai]
 binding = "AI"

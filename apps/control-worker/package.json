@@ -1,19 +1,18 @@
 {
-  "name": "@goldshore/control-worker",
-  "version": "0.0.1",
+  "name": "@goldshore/control",
+  "version": "0.1.0",
   "private": true,
-  "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev src/index.ts",
     "deploy": "wrangler deploy",
-    "build": "wrangler deploy --dry-run --outdir=dist"
+    "run-task": "wrangler dev src/index.ts --test-scheduled"
   },
   "dependencies": {
-    "@goldshore/utils": "workspace:*"
+    "hono": "^4.0.0"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0",
-    "typescript": "^5.0.0",
-    "@cloudflare/workers-types": "^4.0.0"
+    "wrangler": "^3.101.0",
+    "@cloudflare/workers-types": "^4",
+    "typescript": "^5.4.0"
   }
 }
