@@ -1,9 +1,39 @@
 :root {
-  --gs-bg: #020817;
-  --gs-surface: #020c1f;
-  --gs-accent: #0ea5e9;
-  --gs-accent-soft: rgba(14, 165, 233, 0.15);
-  --gs-text: #e5e7eb;
-  --gs-muted: #9ca3af;
-  --gs-radius: 12px;
+  --gs-font: system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+
+  /* Color Palette — GoldShore Spectrum */
+  --gs-bg: #020617;
+  --gs-bg-panel: #0f172a;
+  --gs-bg-elevated: #1e293b;
+
+  --gs-fg: #f8fafc;
+  --gs-fg-muted: #94a3b8;
+
+  /* Brand Colors (Penrose + Aurora) */
+  --gs-cyan: #22d3ee;
+  --gs-purple: #a855f7;
+  --gs-gold: #facc15;
+  --gs-lime: #22c55e;
+
+  --gs-border: rgba(148,163,184,0.25);
+  --gs-border-strong: rgba(148,163,184,0.4);
+
+  /* Radii */
+  --gs-radius-sm: 6px;
+  --gs-radius-md: 10px;
+  --gs-radius-lg: 16px;
+
+  /* Spacing scale */
+  --gs-space-1: 0.25rem;
+  --gs-space-2: 0.5rem;
+  --gs-space-3: 0.75rem;
+  --gs-space-4: 1rem;
+  --gs-space-5: 1.25rem;
+  --gs-space-6: 1.5rem;
+
+  /* Shadows */
+  --gs-shadow: 0 4px 16px rgba(0,0,0,0.3);
+
+  /* Transitions */
+  --gs-trans: 120ms ease;
 }
