@@ -1,18 +1,21 @@
-import { Hono } from "hono";
+import { Hono } from 'hono';
 
 const app = new Hono();
 
-app.get("/", (c) => c.json({ service: "gs-gateway", ok: true }));
+const API_ORIGIN = 'https://api.goldshore.ai';
 
-// forward all API calls
-app.all("/api/*", async (c) => {
-  const path = c.req.path.replace("/api", "");
-  const response = await fetch(`https://api.goldshore.ai${path}`, {
+app.all('/*', async (c) => {
+  const url = new URL(c.req.url);
+  const target = API_ORIGIN + url.pathname + url.search;
+
+  const req = new Request(target, {
     method: c.req.method,
-    headers: c.req.header(),
-    body: c.req.raw.body
+    headers: c.req.raw.headers,
+    body: c.req.method !== "GET" && c.req.method !== "HEAD" ? c.req.raw.body : undefined
   });
-  return response;
+
+  const res = await fetch(req);
+  return res;
 });
 
 export default app;
