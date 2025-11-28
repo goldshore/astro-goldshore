@@ -8,7 +8,7 @@ export const prerender = true;
 export async function getStaticPaths() {
   const pages = await getCollection('docs');
   return pages.map((p) => ({
-    params: { slug: p.slug.split('/') },
+    params: { slug: p.slug },
     props: { page: p }
   }));
 }
