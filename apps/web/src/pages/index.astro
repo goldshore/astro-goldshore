@@ -1,48 +1,58 @@
 ---
-import MarketingLayout from '../layouts/MarketingLayout.astro';
----
+import BaseLayout from '@apps/web/src/layouts/BaseLayout.astro';
+import GSButton from '@packages/ui/GSButton.astro';
 
-<MarketingLayout title="Goldshore | Shaping Waves">
-  <!-- Your hero & feature sections from PR reconstructed into Astro -->
-  <section class="hero">
-    <h1>Shaping <span>Waves</span></h1>
-    <p class="tag">System Status: Operational</p>
-  </section>
-</MarketingLayout>
-
-<style>
-  .hero {
-    text-align: center;
-    padding: 8rem 2rem;
-  }
-  h1 {
-    font-size: 4rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  span {
-    background: linear-gradient(to right, var(--gs-cyan), var(--gs-lime));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .tag {
-    color: var(--gs-lime);
-    font-family: monospace;
-    margin-top: 2rem;
-  }
-</style>
-import Hero from '../components/Hero.astro';
-import FeatureGrid from '../components/FeatureGrid.astro';
-
-const features = [
-  { title: 'Unified API', body: 'API, gateway, AI Workers, and automation in one unified fabric.'},
-  { title: 'Admin UI', body: 'Control infra, trading, routing, logs, and tenants.'},
-  { title: 'Secure by Default', body: 'Cloudflare Zero Trust, Access, JWT, and audit trails.'},
-  { title: 'Developer First', body: 'Docs, SDKs, CLI, and instant key provisioning.'}
+// Mock Data
+const kpis = [
+    { title: "Net Alpha", value: "+4.2%", style: "text-[var(--gs-success)]" },
+    { title: "Risk Tolerance", value: "LOW", style: "text-[var(--gs-brand-blue)]" },
+    { title: "Agent Efficiency", value: "99.99%", style: "text-[var(--gs-brand-gold)]" },
 ];
 ---
+<BaseLayout title="GoldShore | Steer Capital with Intelligence">
 
-<MarketingLayout title="GoldShore – Intelligent Infrastructure">
-  <Hero />
-  <FeatureGrid items={features} />
-</MarketingLayout>
+    <!-- Hero Section -->
+    <section class="max-w-4xl mx-auto text-center py-24 px-4 space-y-6">
+        <h1 class="text-6xl gs-heading tracking-tight" style="color: var(--gs-text-primary);">
+            Steer Capital with <span style="color: var(--gs-brand-blue);">AI Intelligence</span>.
+        </h1>
+        <p class="text-xl" style="color: var(--gs-text-secondary);">
+            The unified system for market analytics, secure data, and automated strategic operations.
+        </p>
+        <div class="flex justify-center space-x-4">
+            <GSButton href="https://admin.goldshore.ai" variant="primary">Access Console</GSButton>
+            <GSButton href="/contact" variant="secondary">Request Demo</GSButton>
+        </div>
+    </section>
+
+    <!-- Metrics Bar (Actionable Content) -->
+    <section class="max-w-7xl mx-auto px-4 pb-16">
+        <div class="grid grid-cols-3 gap-6">
+            {kpis.map(kpi => (
+                <div class="gs-card text-center">
+                    <p class="text-xs uppercase tracking-wider" style="color: var(--gs-text-secondary);">{kpi.title}</p>
+                    <p class={`text-4xl gs-heading mt-2 ${kpi.style}`}>{kpi.value}</p>
+                </div>
+            ))}
+        </div>
+    </section>
+
+    <!-- Site Tree Example -->
+    <section class="max-w-7xl mx-auto px-4 pb-16">
+        <h2 class="text-3xl gs-heading mb-6">Site Tree & Navigation</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" style="color: var(--gs-brand-blue);">
+            <div><p class="font-bold mb-2">Public Web</p><ul>
+                <li>/about</li><li>/pricing</li><li>/contact</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">User Portal</p><ul>
+                <li>/app/dashboard</li><li>/app/logs</li><li>/app/profile</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">Admin Console</p><ul>
+                <li>/admin/overview</li><li>/admin/workers</li><li>/admin/users</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">API Endpoints</p><ul>
+                <li>/health</li><li>/auth/login</li><li>/content/:slug</li>
+            </ul></div>
+        </div>
+    </section>
+</BaseLayout>
