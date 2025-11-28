@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336abf0e0f52c777ae4f975e966d0
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Node
-        uses: actions/setup-node@60edb5dd7ba3c0c2c5e0df3e00d8c3f1e5f1b8ac
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
           cache: pnpm
@@ -26,7 +26,7 @@ jobs:
         run: pnpm --filter "./apps/web" build
 
       - name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@e4e6f7e75eb3dda82db28134c66da2db78df12d4
+        uses: cloudflare/pages-action@f0a1cd58cd66095dee69bfa18fa5efd1dde93bca
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}

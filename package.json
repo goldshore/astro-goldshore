@@ -7,8 +7,7 @@
     "build:openapi": "node scripts/build-openapi.mjs",
     "build": "pnpm build:openapi && turbo run build",
     "lint": "turbo run lint",
-    "test": "turbo run test",
-    "build:openapi": "node scripts/build-openapi.mjs"
+    "test": "turbo run test"
   },
   "devDependencies": {
     "astro": "^5.15.9",
