@@ -13,28 +13,39 @@ on:
 jobs:
   preview-admin:
     runs-on: ubuntu-latest
+
     steps:
+      # Checkout the repo
       - uses: actions/checkout@v4
+
+      # Setup Node + PNPM
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: "pnpm"
 
-      - name: Install deps
-        run: npm install
+      # Install from monorepo root
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Build admin cockpit
+      # Build Admin App
+      - name: Build Admin Cockpit
         working-directory: apps/admin
         env:
           PUBLIC_API: https://api-preview.goldshore.ai
           PUBLIC_GATEWAY: https://gw-preview.goldshore.ai
-        run: npm run build
+        run: pnpm build
 
-      - name: Deploy to Cloudflare Pages (preview)
+      # Deploy to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages (Preview)
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: astro-gs-admin
-          directory: dist
+          directory: apps/admin/dist
           branch: ${{ github.head_ref || github.ref_name }}
