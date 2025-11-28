@@ -1,154 +1,58 @@
 ---
-import '@goldshore/theme/tokens.css';
+import BaseLayout from '@apps/web/src/layouts/BaseLayout.astro';
+import GSButton from '@packages/ui/GSButton.astro';
 
-// Placeholder for future component imports
+// Mock Data
+const kpis = [
+    { title: "Net Alpha", value: "+4.2%", style: "text-[var(--gs-success)]" },
+    { title: "Risk Tolerance", value: "LOW", style: "text-[var(--gs-brand-blue)]" },
+    { title: "Agent Efficiency", value: "99.99%", style: "text-[var(--gs-brand-gold)]" },
+];
 ---
+<BaseLayout title="GoldShore | Steer Capital with Intelligence">
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Goldshore | Shaping Waves</title>
-		<style>
-			body {
-				background-color: var(--color-background);
-				color: var(--color-text-primary);
-				font-family: var(--font-family-base);
-				margin: 0;
-				padding: 0;
-			}
+    <!-- Hero Section -->
+    <section class="max-w-4xl mx-auto text-center py-24 px-4 space-y-6">
+        <h1 class="text-6xl gs-heading tracking-tight" style="color: var(--gs-text-primary);">
+            Steer Capital with <span style="color: var(--gs-brand-blue);">AI Intelligence</span>.
+        </h1>
+        <p class="text-xl" style="color: var(--gs-text-secondary);">
+            The unified system for market analytics, secure data, and automated strategic operations.
+        </p>
+        <div class="flex justify-center space-x-4">
+            <GSButton href="https://admin.goldshore.ai" variant="primary">Access Console</GSButton>
+            <GSButton href="/contact" variant="secondary">Request Demo</GSButton>
+        </div>
+    </section>
 
-			.container {
-				max-width: 1200px;
-				margin: 0 auto;
-				padding: 0 var(--space-4);
-			}
+    <!-- Metrics Bar (Actionable Content) -->
+    <section class="max-w-7xl mx-auto px-4 pb-16">
+        <div class="grid grid-cols-3 gap-6">
+            {kpis.map(kpi => (
+                <div class="gs-card text-center">
+                    <p class="text-xs uppercase tracking-wider" style="color: var(--gs-text-secondary);">{kpi.title}</p>
+                    <p class={`text-4xl gs-heading mt-2 ${kpi.style}`}>{kpi.value}</p>
+                </div>
+            ))}
+        </div>
+    </section>
 
-			header {
-				padding: var(--space-4) 0;
-				border-bottom: 1px solid var(--color-matte-grey);
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-			}
-
-			.logo {
-				height: 40px;
-			}
-
-			.hero {
-				padding: var(--space-16) 0;
-				text-align: center;
-				background: linear-gradient(180deg, var(--color-background) 0%, var(--color-matte-grey) 100%);
-			}
-
-			h1 {
-				font-size: 4rem;
-				color: var(--color-text-primary);
-				margin-bottom: var(--space-4);
-				text-transform: uppercase;
-				letter-spacing: 0.1em;
-			}
-
-			h2 {
-				font-size: 2.5rem;
-				color: var(--color-accent);
-				margin-bottom: var(--space-8);
-			}
-
-			.cta-button {
-				background-color: var(--color-utility-orange);
-				color: var(--color-text-primary);
-				padding: var(--space-4) var(--space-8);
-				border-radius: var(--border-radius-md);
-				text-decoration: none;
-				font-weight: bold;
-				text-transform: uppercase;
-				transition: background-color 0.3s ease;
-			}
-
-			.cta-button:hover {
-				background-color: var(--color-highlight);
-				color: var(--color-background);
-			}
-
-			.section {
-				padding: var(--space-16) 0;
-			}
-
-			.section-dark {
-				background-color: var(--color-matte-grey);
-			}
-
-			.feature-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-				gap: var(--space-8);
-			}
-
-			.feature-card {
-				background-color: var(--color-alcantara);
-				padding: var(--space-8);
-				border-radius: var(--border-radius-md);
-				border: 1px solid var(--color-silver);
-			}
-
-			footer {
-				padding: var(--space-8) 0;
-				text-align: center;
-				color: var(--color-text-secondary);
-				border-top: 1px solid var(--color-matte-grey);
-			}
-		</style>
-	</head>
-	<body>
-		<header>
-			<div class="container">
-				<img src="/logo.png" alt="Goldshore Labs" class="logo" />
-				<nav>
-					<!-- Navigation placeholder -->
-				</nav>
-			</div>
-		</header>
-
-		<main>
-			<section class="hero">
-				<div class="container">
-					<h1>Shaping Waves</h1>
-					<p style="font-size: 1.25rem; color: var(--color-text-secondary); max-width: 600px; margin: 0 auto var(--space-8);">
-						Redefining the future of capital with precision and speed.
-					</p>
-					<a href="#" class="cta-button">Explore</a>
-				</div>
-			</section>
-
-			<section class="section section-dark">
-				<div class="container">
-					<h2>We Steer Capital</h2>
-					<div class="feature-grid">
-						<div class="feature-card">
-							<h3 style="color: var(--color-neon-yellow)">Speed</h3>
-							<p>Military-grade infrastructure for high-frequency operations.</p>
-						</div>
-						<div class="feature-card">
-							<h3 style="color: var(--color-neon-yellow)">Precision</h3>
-							<p>Algorithmic strategies modeled on fluid dynamics.</p>
-						</div>
-						<div class="feature-card">
-							<h3 style="color: var(--color-neon-yellow)">Control</h3>
-							<p>Real-time analytics and dashboarding.</p>
-						</div>
-					</div>
-				</div>
-			</section>
-		</main>
-
-		<footer>
-			<div class="container">
-				<p>&copy; 2024 Goldshore Labs. All rights reserved.</p>
-			</div>
-		</footer>
-	</body>
-</html>
+    <!-- Site Tree Example -->
+    <section class="max-w-7xl mx-auto px-4 pb-16">
+        <h2 class="text-3xl gs-heading mb-6">Site Tree & Navigation</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" style="color: var(--gs-brand-blue);">
+            <div><p class="font-bold mb-2">Public Web</p><ul>
+                <li>/about</li><li>/pricing</li><li>/contact</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">User Portal</p><ul>
+                <li>/app/dashboard</li><li>/app/logs</li><li>/app/profile</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">Admin Console</p><ul>
+                <li>/admin/overview</li><li>/admin/workers</li><li>/admin/users</li>
+            </ul></div>
+            <div><p class="font-bold mb-2">API Endpoints</p><ul>
+                <li>/health</li><li>/auth/login</li><li>/content/:slug</li>
+            </ul></div>
+        </div>
+    </section>
+</BaseLayout>

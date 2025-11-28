@@ -1,31 +1,41 @@
-name: Preview Gateway Worker
+name: Preview Gateway Worker (gw-preview.goldshore.ai)
+
+permissions:
+  contents: read
 
 on:
   pull_request:
     paths:
       - "apps/gateway/**"
+      - "packages/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
   push:
     branches:
       - "feature/**"
 
 jobs:
-  preview-gateway:
+  deploy-preview-gateway:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@b4ffde65f46336abf0e0f52c777ae4f975e966d0
 
-      - uses: actions/setup-node@60edb5dd7ba3c0c2c5e0df3e00d8c3f1e5f1b8ac
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
 
-      - uses: pnpm/action-setup@c8fa85d5757c0c966f0a5c5c26a9a5c7bb334d4c
-        with:
-          version: 8.15.8
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm install
-
-      - run: pnpm --filter @goldshore/gateway build
+      - name: Deploy Gateway worker (preview)
+        working-directory: apps/gateway
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy --env preview --config wrangler.toml

@@ -1,35 +1,57 @@
+/* ---------------------------------------------------- */
+/* GOLDSHORE: UNIFIED DESIGN SYSTEM V3 (Astro-goldshore)*/
+/* ---------------------------------------------------- */
+
 :root {
-  /* Brand Colors */
-  --color-matte-grey: #2A2A2A;
-  --color-silver: #C0C0C0;
-  --color-alcantara: #1C1C1C;
-  --color-utility-orange: #FF6600;
-  --color-military-green: #4B5320;
-  --color-sports-car-green: #004225;
-  --color-neon-yellow: #CCFF00;
+  /* Core Colors */
+  --gs-bg: #0C111A;             /* Deep Navy/Graphite (Background) */
+  --gs-surface: #1B212D;        /* Card/Panel Background */
+  --gs-text-primary: #E7EDF7;   /* Primary Text */
+  --gs-text-secondary: #95A1B8; /* Muted/Secondary Text */
 
-  /* Semantic Colors */
-  --color-background: var(--color-alcantara);
-  --color-surface: var(--color-matte-grey);
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: var(--color-silver);
-  --color-accent: var(--color-utility-orange);
-  --color-highlight: var(--color-neon-yellow);
-  --color-success: var(--color-sports-car-green);
+  /* Brand Accents (Luminous) */
+  --gs-brand-blue: #007AFF;     /* Penrose Blue (UI focus, Links) */
+  --gs-brand-gold: #FFC947;     /* Gold Accent (Metrics, Primary CTAs) */
+  --gs-border: #3A445C;         /* Subtle Separator Lines */
+  --gs-success: #34D399;        /* Success Status */
 
-  /* Typography */
-  --font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-family-mono: 'JetBrains Mono', monospace;
+  /* Typography & Utility */
+  --gs-font-headline: 'Inter Tight', system-ui, sans-serif;
+  --gs-font-body: 'Inter', system-ui, sans-serif;
+  --gs-radius: 10px;
+  --gs-ease: cubic-bezier(.22, .61, .36, 1);
+  --gs-layout-gap: 24px;
+}
 
-  /* Spacing */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-4: 1rem;
-  --space-8: 2rem;
-  --space-16: 4rem;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  /* Borders */
-  --border-radius-sm: 4px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 16px;
+/* Global Styles */
+html, body {
+  font-family: var(--gs-font-body);
+  background-color: var(--gs-bg);
+  color: var(--gs-text-primary);
+  line-height: 1.6;
+}
+
+.gs-heading {
+    font-family: var(--gs-font-headline);
+    font-weight: 800;
+}
+
+.gs-button-primary {
+    background-color: var(--gs-brand-gold);
+    color: var(--gs-bg);
+    transition: transform 0.2s var(--gs-ease);
+}
+.gs-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(255, 201, 71, 0.4);
+}
+.gs-card {
+    background-color: var(--gs-surface);
+    border: 1px solid var(--gs-border);
+    border-radius: var(--gs-radius);
+    padding: var(--gs-layout-gap);
 }

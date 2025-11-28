@@ -1,0 +1,13 @@
+repository: astro-gs-web
+domain: https://goldshore.ai
+cloudflare_project: astro-gs-web
+scope: web_frontend
+
+cloudflare_permissions:
+  can_manage_dns: true
+  can_manage_workers: true
+  can_manage_pages: true
+  can_manage_bindings: true
+  can_manage_email_routing: true
+
+repo_lock: true
