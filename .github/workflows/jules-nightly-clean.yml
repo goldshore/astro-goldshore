@@ -1,4 +1,7 @@
 name: Jules Nightly Repo Health
+permissions:
+  contents: read
+  actions: write
 
 on:
   schedule:
