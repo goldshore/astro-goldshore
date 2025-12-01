@@ -1,21 +1,20 @@
-name: Preview Admin (admin.goldshore.ai)
+name: Deploy Web (goldshore.ai)
 
 permissions:
   contents: read
 
 on:
-  pull_request:
+  push:
+    branches:
+      - main
     paths:
-      - "apps/admin/**"
+      - "apps/web/**"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
-  push:
-    branches:
-      - "feature/**"
 
 jobs:
-  preview-admin:
+  deploy-web:
     runs-on: ubuntu-latest
 
     steps:
@@ -33,18 +32,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build admin cockpit (preview)
-        working-directory: apps/admin
-        env:
-          PUBLIC_API: https://api-preview.goldshore.ai
-          PUBLIC_GATEWAY: https://gw-preview.goldshore.ai
+      - name: Build web app
+        working-directory: apps/web
         run: pnpm build
 
-      - name: Deploy to Cloudflare Pages (preview)
+      - name: Deploy to Cloudflare Pages (production)
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: astro-gs-admin
-          directory: apps/admin/dist
-          branch: ${{ github.head_ref || github.ref_name }}
+          projectName: astro-gs-web
+          directory: apps/web/dist
+          branch: main
