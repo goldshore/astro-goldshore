@@ -69,6 +69,12 @@ This repository contains *all* applications, shared packages, and infrastructure
 
 ---
 
+# 🧭 Operational Playbooks
+
+- [Merge Conflict Playbook](docs/merge-conflict-playbook.md) — conflict-safe steps for cleaning up PRs and prioritizing merges.
+
+---
+
 # 🧩 Applications
 
 ## **1. apps/web – Public Website (Astro)**
