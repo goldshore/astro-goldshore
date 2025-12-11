@@ -1,26 +1,5 @@
 name = "gs-control"
 main = "src/index.ts"
-<<<<<<< HEAD
-compatibility_date = "2024-12-01"
-
-[[kv_namespaces]]
-binding = "CONTROL_LOGS"
-id = "gs_control_logs_001"
-
-[[r2_buckets]]
-binding = "STATE"
-bucket_name = "gs-control-state"
-
-[[services]]
-binding = "API"
-service = "gs-api"
-environment = "production"
-
-[[services]]
-binding = "GATEWAY"
-service = "gs-gateway"
-environment = "production"
-=======
 compatibility_date = "2025-01-10"
 compatibility_flags = ["nodejs_compat"]
 
@@ -44,4 +23,3 @@ database_id = "gs_database_id_001"
 [[r2_buckets]]
 binding = "gs-assets"
 bucket_name = "gs-assets"
->>>>>>> origin/main
