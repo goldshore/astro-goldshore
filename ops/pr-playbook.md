@@ -11,16 +11,16 @@ This playbook defines how to handle:
 
 ## 0. Principles
 
-1. **Lockfiles are never hand-edited.**
+1. **Lockfiles are never hand-edited.**  
    If `pnpm-lock.yaml` has conflicts, we delete and regenerate it.
 
-2. **`main` is the source of truth.**
+2. **`main` is the source of truth.**  
    Conflicted PR branches sync to `origin/main` first, then are fixed.
 
-3. **High-impact files come first.**
+3. **High-impact files come first.**  
    PRs touching infra, workers, or layouts get resolved before copy-only or minor tweaks.
 
-4. **Automate where possible.**
+4. **Automate where possible.**  
    Use `gh` and (later) Jules bot/Actions to clean branches, not manual gymnastics.
 
 ---
@@ -33,12 +33,11 @@ When you see a PR with “This branch has conflicts that must be resolved”:
    ```bash
    gh pr view <id> --json files --jq '.files[].path'
    ```
-
-2. If the PR includes `pnpm-lock.yaml` with conflicts → skip manual resolution and go to Section 2.2.
+2. If the PR includes pnpm-lock.yaml with conflicts → skip manual resolution and go to Section 2.2.
 3. If the PR only has source/config files (no lockfile or generated assets) → follow Section 2.3.
-4. If PR is obviously obsolete (old branch, pre-refactor layouts, dead worker path) → consider closing it or hard-resetting it to `main`.
+4. If PR is obviously obsolete (old branch, pre-refactor layouts, dead worker path) → consider closing it or hard-resetting it to main.
 
----
+⸻
 
 ## 2. Resolving Merge Conflicts for a PR
 
@@ -58,19 +57,19 @@ git fetch origin pull/<id>/head:pr-<id>
 git checkout pr-<id>
 ```
 
-Make sure `main` is current:
+Make sure main is current:
 
 ```bash
 git fetch origin main
 ```
 
----
+⸻
 
-### 2.2 Special Case: Lockfile Conflicts (`pnpm-lock.yaml`)
+### 2.2 Special Case: Lockfile Conflicts (pnpm-lock.yaml)
 
-If `pnpm-lock.yaml` shows conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`):
+If pnpm-lock.yaml shows conflict markers (<<<<<<<, =======, >>>>>>>):
 
-**Do NOT open or edit the lockfile manually.**
+Do NOT open or edit the lockfile manually.
 
 Instead:
 
@@ -88,14 +87,14 @@ git commit -m "Fix: regenerate pnpm-lock.yaml after syncing with main" || true
 git push --force-with-lease
 ```
 
-**Result:**
-*   All lockfile conflicts are gone
-*   Lockfile is clean and consistent with `main` + current `package.json`
-*   CI can now run properly
+Result:
+- All lockfile conflicts are gone
+- Lockfile is clean and consistent with main + current package.json
+- CI can now run properly
 
-If the PR had important code changes you still care about, sync with `main` first using `git rebase origin/main` instead of `reset`, then still delete and regenerate `pnpm-lock.yaml`.
+If the PR had important code changes you still care about, sync with main first using git rebase origin/main instead of reset, then still delete and regenerate pnpm-lock.yaml.
 
----
+⸻
 
 ### 2.3 Resolving Conflicts in Source/Config Files
 
@@ -109,63 +108,59 @@ git rebase origin/main
 
 If Git shows conflicts:
 
-1.  List conflicted files:
-    ```bash
-    git status
-    ```
+1. List conflicted files:
+   ```bash
+   git status
+   ```
+2. For each conflicted file (excluding lockfiles):
+   - Open the file
+   - Look for:
+     ```
+     <<<<<<< HEAD
+     ...
+     =======
+     ...
+     >>>>>>> branch-name
+     ```
+   - Decide:
+     - Keep current (HEAD, which is main)
+     - Keep incoming (PR branch)
+     - Or blend them manually
+   - Remove all conflict markers and ensure the code still makes sense.
+3. Mark conflicts resolved:
+   ```bash
+   git add <file1> <file2> ...
+   ```
+4. Complete the rebase/merge:
+   ```bash
+   git rebase --continue  # if using rebase
+   # or
+   # git commit -m "Resolve merge conflicts for PR <id>"  # if using merge
+   ```
+5. Validate locally:
+   ```bash
+   pnpm lint || echo "Lint warnings (non-blocking)"
+   pnpm build
+   ```
+6. Push updates:
+   - Rebase:
+     ```bash
+     git push --force-with-lease
+     ```
+   - Merge:
+     ```bash
+     git push
+     ```
+7. Leave a short PR comment:
+   - Example:
+     ```
+     Resolved conflicts by syncing with main, regenerating pnpm-lock.yaml, and merging:
+     • apps/admin/…
+     • apps/web/…
+     Lint + build passing locally. CI re-run.
+     ```
 
-2.  For each conflicted file (excluding lockfiles):
-    *   Open the file
-    *   Look for:
-        ```text
-        <<<<<<< HEAD
-        ...
-        =======
-        ...
-        >>>>>>> branch-name
-        ```
-    *   Decide:
-        *   Keep current (HEAD, which is `main`)
-        *   Keep incoming (PR branch)
-        *   Or blend them manually
-    *   Remove all conflict markers and ensure the code still makes sense.
-
-3.  Mark conflicts resolved:
-    ```bash
-    git add <file1> <file2> ...
-    ```
-
-4.  Complete the rebase/merge:
-    ```bash
-    git rebase --continue  # if using rebase
-    # or
-    # git commit -m "Resolve merge conflicts for PR <id>"  # if using merge
-    ```
-
-5.  Validate locally:
-    ```bash
-    pnpm lint || echo "Lint warnings (non-blocking)"
-    pnpm build
-    ```
-
-6.  Push updates:
-    *   Rebase:
-        ```bash
-        git push --force-with-lease
-        ```
-    *   Merge:
-        ```bash
-        git push
-        ```
-
-7.  Leave a short PR comment:
-    *   Example:
-        > Resolved conflicts by syncing with main, regenerating pnpm-lock.yaml, and merging:
-        > * apps/admin/…
-        > * apps/web/…
-        > Lint + build passing locally. CI re-run.
-
----
+⸻
 
 ## 3. Inventory: Open PRs & Critical Files
 
@@ -181,7 +176,7 @@ gh pr list --state open --limit 50 \
 
 Optional: run per repo if you have multiple (e.g. monorepo vs infra repo).
 
----
+⸻
 
 ### 3.2 Identify “Vital” PRs
 
@@ -232,64 +227,60 @@ Those are high-impact and should be cleaned/merged before small copy changes.
 ## 4. Using Jules (Automation Layer)
 
 As Jules evolves into a hybrid GitHub App + Actions bot, the idea is:
-
-*   **Let Jules handle:**
-    *   Lockfile regeneration
-    *   Resetting branches against `main`
-    *   Deleting dead directories (`apps/goldshore-agent`, old prototypes, etc.)
-    *   Re-running CI after fixes
-*   **Let you handle:**
-    *   Semantic decisions in conflicted source files
-    *   “Does this change still match the product?”
-    *   Merge order and which PRs to keep/close
+- Let Jules handle:
+  - Lockfile regeneration
+  - Resetting branches against main
+  - Deleting dead directories (apps/goldshore-agent, old prototypes, etc.)
+  - Re-running CI after fixes
+- Let you handle:
+  - Semantic decisions in conflicted source files
+  - “Does this change still match the product?”
+  - Merge order and which PRs to keep/close
 
 Future commands (once wired):
-*   `/jules clean` → sync branch to `main`, regenerate lockfile, push fix
-*   `/jules status` → summarize conflicts, CI, and required manual steps
-*   `/jules diag` → attach logs from failing builds/lint for this PR
+- /jules clean → sync branch to main, regenerate lockfile, push fix
+- /jules status → summarize conflicts, CI, and required manual steps
+- /jules diag → attach logs from failing builds/lint for this PR
 
 Until that’s live, this playbook is the manual version of what Jules will eventually automate.
 
----
+⸻
 
 ## 5. Common Scenarios
 
-### Scenario A — PR blocked only by `pnpm-lock.yaml`
-
-1.  Checkout PR branch
-2.  Delete lockfile
-3.  `pnpm install`
-4.  Commit new lockfile
-5.  Push (force if rebased)
+**Scenario A — PR blocked only by pnpm-lock.yaml**
+1. Checkout PR branch
+2. Delete lockfile
+3. pnpm install
+4. Commit new lockfile
+5. Push (force if rebased)
 
 ✅ No manual merge of 200+ lines. Let PNPM do the work.
 
----
+⸻
 
-### Scenario B — PR touches `apps/web/src/pages/index.astro` and `apps/admin/src/pages/index.astro`
+**Scenario B — PR touches apps/web/src/pages/index.astro and apps/admin/src/pages/index.astro**
+1. Sync branch with main (rebase origin/main)
+2. Resolve conflicts in those .astro files manually
+3. Delete/regenerate lockfile if needed
+4. Build: pnpm build
+5. Push, then re-run CI
 
-1.  Sync branch with `main` (`rebase origin/main`)
-2.  Resolve conflicts in those `.astro` files manually
-3.  Delete/regenerate lockfile if needed
-4.  Build: `pnpm build`
-5.  Push, then re-run CI
+⸻
 
----
+**Scenario C — PR is clearly obsolete or colliding with newer architecture**
+1. Decide if any code is still valuable
+2. If no:
+   - Close PR with comment:
+     Closing in favor of the latest main structure. Re-open or rebase if needed.
+3. If yes:
+   - Cherry-pick key commits into a fresh branch based on main
+   - Open a new clean PR
 
-### Scenario C — PR is clearly obsolete or colliding with newer architecture
-
-1.  Decide if any code is still valuable
-2.  If no:
-    *   Close PR with comment:
-        > Closing in favor of the latest main structure. Re-open or rebase if needed.
-3.  If yes:
-    *   Cherry-pick key commits into a fresh branch based on `main`
-    *   Open a new clean PR
-
----
+⸻
 
 This file should live as:
 
-`ops/pr-playbook.md`
+ops/pr-playbook.md
 
-and can be linked from your `README.md` under a “Contributing / PR Workflow” section if you want others (or future-you) to follow the same flow.
+and can be linked from your README.md under a “Contributing / PR Workflow” section if you want others (or future-you) to follow the same flow.
