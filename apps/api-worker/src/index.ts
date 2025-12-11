@@ -1,4 +1,7 @@
 import { Hono } from "hono";
+import health from "./routes/health";
+import user from "./routes/user";
+import system from "./routes/system";
 
 const app = new Hono();
 
