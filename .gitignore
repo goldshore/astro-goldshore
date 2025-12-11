@@ -201,7 +201,7 @@ dist
 ### Astro ###
 .astro/
 
-# Prevent lockfile wars during monorepo stabilization
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+# Generated OpenAPI files
+apps/web/src/content/openapi/*.json
+apps/web/openapi/*.json
+apps/web/openapi/openapi/*.json
