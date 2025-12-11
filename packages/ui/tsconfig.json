@@ -5,7 +5,11 @@
     "declaration": true,
     "jsx": "react-jsx",
     "esModuleInterop": true,
-    "lib": ["es2020", "dom"]
+    "lib": ["es2020", "dom"],
+    "moduleResolution": "bundler",
+    "target": "ESNext",
+    "module": "ESNext",
+    "skipLibCheck": true
   },
-  "include": ["src"]
+  "include": ["index.ts", "env.d.ts", "components/**/*"]
 }

@@ -1,7 +1,11 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"]
   "compilerOptions": {
-    "types": ["astro/client"]
+    "jsx": "preserve",
+    "types": ["astro/client"],
+    "moduleResolution": "bundler"
   },
-  "include": ["src/**/*", "astro.config.mjs"]
+  "include": ["src/**/*"]
 }

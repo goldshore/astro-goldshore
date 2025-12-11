@@ -1,18 +1,16 @@
 {
   "name": "@goldshore/web",
-  "type": "module",
   "version": "0.0.1",
+  "private": true,
+  "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.15.9",
-    "@astrojs/cloudflare": "^12.6.11",
-    "@goldshore/theme": "workspace:*",
-    "@goldshore/ui": "workspace:*"
+    "astro": "^5.15.4",
+    "@goldshore/theme": "workspace:*"
   }
 }

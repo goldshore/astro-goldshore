@@ -1,12 +1,11 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Section from "../components/ui/Section.astro";
+import BaseLayout from '@apps/web/src/layouts/BaseLayout.astro';
 ---
-
-<WebLayout title="Contact GoldShore">
-  <Section max="md">
-    <h1>Contact</h1>
-    <p>We'd love to hear from you. Whether you have a question about features, pricing, or need a demo, our team is ready to answer all your questions.</p>
-    <p>Email us: <a href="mailto:support@goldshore.ai" style="color: var(--gs-blue);">support@goldshore.ai</a></p>
-  </Section>
-</WebLayout>
+<BaseLayout title="Contact | GoldShore">
+    <section class="max-w-4xl mx-auto py-24 px-6 space-y-4">
+        <h1 class="text-4xl gs-heading">Contact Us</h1>
+        <p class="text-[var(--gs-text-secondary)]">
+            This is a placeholder contact page. A full contact form will be added soon.
+        </p>
+    </section>
+</BaseLayout>

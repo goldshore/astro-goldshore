@@ -1,12 +1,11 @@
 ---
-import WebLayout from "../components/Layouts/WebLayout.astro";
-import Section from "../components/ui/Section.astro";
+import BaseLayout from '@apps/web/src/layouts/BaseLayout.astro';
 ---
-
-<WebLayout title="About GoldShore">
-  <Section max="lg">
-    <h1>About GoldShore</h1>
-    <p>GoldShore is a unified compute, security, and automation platform designed to simplify the complexity of modern cloud infrastructure.</p>
-    <p>Our mission is to provide developers with the tools they need to build, deploy, and scale their applications with ease and confidence.</p>
-  </Section>
-</WebLayout>
+<BaseLayout title="About | GoldShore">
+    <section class="max-w-4xl mx-auto py-24 px-6">
+        <h1 class="text-4xl gs-heading mb-4">About GoldShore</h1>
+        <p class="text-lg text-[var(--gs-text-secondary)]">
+            This page is a placeholder. Project information and mission content will be added soon.
+        </p>
+    </section>
+</BaseLayout>
