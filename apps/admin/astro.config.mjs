@@ -1,16 +1,21 @@
-import { defineConfig } from "astro/config";
-import cloudflare from "@astrojs/cloudflare";
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
-  output: "server",
+  output: 'server',
   adapter: cloudflare(),
-  srcDir: "src",
+  srcDir: './src',
+  integrations: [],
   vite: {
     resolve: {
       alias: {
-        "@ui": "@goldshore/ui",
-        "@theme": "@goldshore/theme"
+        '@apps': new URL('../../apps', import.meta.url).pathname,
+        '@packages': new URL('../../packages', import.meta.url).pathname
       }
+    },
+    ssr: {
+      // ensure monorepo packages are bundled
+      noExternal: ['@goldshore/ui', '@goldshore/theme']
     }
   }
 });
