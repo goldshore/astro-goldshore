@@ -9,7 +9,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
+        '@goldshore/ui': new URL('../../packages/ui', import.meta.url).pathname,
         '@goldshore/theme': new URL('../../packages/theme', import.meta.url).pathname
       }
     },

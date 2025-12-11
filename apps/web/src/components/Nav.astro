@@ -1,20 +1,11 @@
-<nav class="gs-nav">
-  <div class="logo">GOLDSHORE</div>
-  <div class="links">
-    <a href="/">Home</a>
-    <a href="/developer/docs">Docs</a>
-    <a href="/developer/api">API</a>
+<nav class="w-full flex justify-between items-center p-4 bg-[var(--gs-surface)] border-b border-[var(--gs-border)]">
+  <a href="/" class="flex items-center gap-3 text-lg font-bold text-[var(--gs-brand-gold)] decoration-none">
+     <img src="/logo.png" alt="GoldShore" class="h-6 w-auto" />
+     <span>GOLDSHORE</span>
+  </a>
+  <div class="hidden md:flex space-x-6 text-sm">
+    <a href="/" class="text-[var(--gs-text-secondary)] hover:text-[var(--gs-text-primary)]">Home</a>
+    <a href="/developer/docs" class="text-[var(--gs-text-secondary)] hover:text-[var(--gs-text-primary)]">Docs</a>
+    <a href="/developer/api" class="text-[var(--gs-text-secondary)] hover:text-[var(--gs-text-primary)]">API</a>
   </div>
 </nav>
-<style>
-  .gs-nav {
-    display: flex;
-    justify-content: space-between;
-    padding: 1rem 2rem;
-    background: var(--gs-bg-panel);
-    border-bottom: 1px solid var(--gs-border);
-  }
-  .logo { font-weight: bold; color: var(--gs-cyan); }
-  .links a { margin-left: 1rem; color: var(--gs-fg-muted); }
-  .links a:hover { color: var(--gs-fg); }
-</style>

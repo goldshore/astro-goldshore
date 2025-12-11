@@ -1,28 +1,11 @@
-<footer class="footer">
-  <div>© {new Date().getFullYear()} GoldShore</div>
-  <div class="links">
-    <a href="/legal/privacy">Privacy</a>
-    <a href="/legal/terms">Terms</a>
-    <a href="/developer">Developers</a>
+<footer class="w-full p-8 border-t border-[var(--gs-border)] bg-[var(--gs-surface)] flex flex-col md:flex-row justify-between items-center text-sm text-[var(--gs-text-secondary)]">
+  <div class="flex items-center gap-2 mb-4 md:mb-0">
+     <img src="/logo.png" alt="GoldShore" class="h-6 w-auto opacity-70" />
+     <span>© {new Date().getFullYear()} GoldShore Labs</span>
+  </div>
+  <div class="flex space-x-6">
+    <a href="/legal/privacy" class="hover:text-[var(--gs-text-primary)]">Privacy</a>
+    <a href="/legal/terms" class="hover:text-[var(--gs-text-primary)]">Terms</a>
+    <a href="/developer" class="hover:text-[var(--gs-text-primary)]">Developers</a>
   </div>
 </footer>
-
-<style>
-  .footer {
-    padding: 2rem;
-    border-top: 1px solid rgba(148,163,184,0.2);
-    background: #000;
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    color: #94a3b8;
-  }
-  .links a {
-    margin-left: 1.2rem;
-    color: #94a3b8;
-    text-decoration: none;
-  }
-  .links a:hover {
-    color: #f8fafc;
-  }
-</style>

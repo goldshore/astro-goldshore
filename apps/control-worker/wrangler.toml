@@ -1,5 +1,6 @@
 name = "gs-control"
 main = "src/index.ts"
+<<<<<<< HEAD
 compatibility_date = "2024-12-01"
 
 [[kv_namespaces]]
@@ -19,3 +20,28 @@ environment = "production"
 binding = "GATEWAY"
 service = "gs-gateway"
 environment = "production"
+=======
+compatibility_date = "2025-01-10"
+compatibility_flags = ["nodejs_compat"]
+
+workers_dev = false
+routes = [
+  { pattern = "ops.goldshore.ai/*", zone_name = "goldshore.ai" }
+]
+
+[vars]
+ENV = "production"
+
+[[kv_namespaces]]
+binding = "gs-kv"
+id = "gs_api_kv_prod_001"
+
+[[d1_databases]]
+binding = "gs-db"
+database_name = "gs-db"
+database_id = "gs_database_id_001"
+
+[[r2_buckets]]
+binding = "gs-assets"
+bucket_name = "gs-assets"
+>>>>>>> origin/main

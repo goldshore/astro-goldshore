@@ -1,15 +1,18 @@
 import { defineConfig } from 'astro/config';
 import cloudflare from '@astrojs/cloudflare';
+import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   srcDir: './src',
   output: 'server',
   adapter: cloudflare(),
-  integrations: [],
+  integrations: [tailwind({
+      applyBaseStyles: false,
+  })],
   vite: {
     resolve: {
       alias: {
-        '@goldshore/ui': new URL('../../packages/ui/src', import.meta.url).pathname,
+        '@goldshore/ui': new URL('../../packages/ui', import.meta.url).pathname,
         '@goldshore/theme': new URL('../../packages/theme', import.meta.url).pathname
       }
     },

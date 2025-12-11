@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+/// <reference path="../.astro/types.d.ts" />
+>>>>>>> origin/main
 /// <reference types="astro/client" />
 
 // Type definitions for environment variables

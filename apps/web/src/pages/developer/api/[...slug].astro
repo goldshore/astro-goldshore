@@ -1,64 +1,30 @@
 ---
 import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
 // Import the data directly
 // @ts-ignore
 import openapi from '../../../data/v1.json';
 
 const { slug } = Astro.params;
-// Handle undefined slug (root /api/) if needed, or just /api/something
 const endpoint = slug || '';
 ---
 
-<div class="api-container">
-  <ApiSidebar openapi={openapi} />
-  <main>
-    <ApiEndpoint openapi={openapi} endpoint={endpoint} />
+<BaseLayout title={`API Reference - ${endpoint || 'Overview'}`}>
+<div class="api-container flex flex-col md:flex-row min-h-screen">
+  <div class="hidden md:block h-full">
+    <ApiSidebar openapi={openapi} />
+  </div>
+  <main class="flex-1 p-6 overflow-y-auto w-full">
+    {endpoint ? (
+        <ApiEndpoint openapi={openapi} endpoint={endpoint} />
+    ) : (
+        <div class="prose dark:prose-invert max-w-none">
+            <h1 class="text-3xl font-bold mb-4 text-[var(--gs-text-primary)]">{openapi.info.title}</h1>
+            <p class="text-[var(--gs-text-secondary)] mb-8">{openapi.info.description}</p>
+            <p class="text-[var(--gs-text-secondary)]">Version: {openapi.info.version}</p>
+        </div>
+    )}
   </main>
 </div>
-
-<style>
-  .api-container { display: flex; min-height: 100vh; }
-  main { flex: 1; }
-
-const version = 'v1';
-// Assuming /openapi/v1.json as per instructions.
-// If publicDir is ./openapi, then we need apps/web/openapi/openapi/v1.json to exist.
-const openapi = await fetch(new URL(`/openapi/${version}.json`, Astro.url)).then(r => r.json());
-
-const { slug = [] } = Astro.params;
-const endpointId = slug.join('/');
-
-const paths = Object.entries(openapi.paths || {});
----
-
-<html>
-  <body class="api-body">
-
-    <ApiSidebar version={version} paths={paths} />
-
-    <main class="api-main">
-      {endpointId
-        ? <ApiEndpoint openapi={openapi} endpointId={endpointId} />
-        : <h1>API Reference — {version}</h1>
-      }
-    </main>
-
-  </body>
-</html>
-
-<style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    display: flex;
-    background: #020617;
-    color: #f8fafc;
-  }
-  .api-main {
-    flex: 1;
-    padding: 2rem;
-    height: 100vh;
-    overflow-y: auto;
-  }
-</style>
+</BaseLayout>

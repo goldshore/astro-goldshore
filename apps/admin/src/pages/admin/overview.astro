@@ -1,11 +1,11 @@
 ---
-import AdminLayout from '@apps/web/src/layouts/BaseLayout.astro';
-import GSButton from '@packages/ui/GSButton.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import GSButton from '@goldshore/ui/GSButton.astro';
 
 // Initial UI state
 const initialStatus = { worker: 'Unknown', lastSync: 'N/A' };
 ---
-<AdminLayout title="Admin | Operational Overview">
+<AdminLayout title="Operational Overview">
     <div class="max-w-7xl mx-auto p-8 space-y-8">
         <h1 class="text-4xl gs-heading" style="color: var(--gs-brand-gold);">Operational Overview</h1>
         <p class="text-lg" style="color: var(--gs-text-secondary);">Protected access to monitor Workers, Data, and System Health.</p>

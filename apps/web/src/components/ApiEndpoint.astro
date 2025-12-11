@@ -1,72 +1,70 @@
 ---
-const { openapi, endpoint } = Astro.props;
-const pathItem = openapi.paths['/' + endpoint] || openapi.paths[endpoint];
----
-<div class="endpoint">
-  <h2>{endpoint}</h2>
-  {pathItem ? (
-    <pre>{JSON.stringify(pathItem, null, 2)}</pre>
-  ) : (
-    <p>Endpoint not found.</p>
-  )}
-</div>
-<style>
-  .endpoint { padding: 2rem; }
-  pre { background: var(--gs-bg-elevated); padding: 1rem; border-radius: var(--gs-radius-md); }
 import ApiSchema from './ApiSchema.astro';
 import TryItConsole from './TryItConsole.astro';
 
-const { openapi, endpointId } = Astro.props;
+const { openapi, endpoint } = Astro.props;
+
+// endpoint comes from slug, e.g. "users" or "users/123"
+// openapi paths usually start with /, e.g. "/users"
+
+const lookupPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+
+const match = Object.entries(openapi.paths || {})
+  .find(([p]) => p === lookupPath || p === endpoint);
+
+const [path, ops] = match || [null, null];
 
 const methods = ['get','post','put','delete','patch'];
-
-const match = Object.entries(openapi.paths)
-  .find(([p]) => p.replace(/^\//,'') === endpointId);
-
-if (!match) {
-  throw new Error(`Endpoint ${endpointId} not found`);
-}
-
-const [path, ops] = match;
 ---
 
 <section class="api-endpoint">
-  <h1>{path}</h1>
+  {path ? (
+      <>
+      <h1 class="text-2xl font-bold mb-6 text-[var(--gs-text-primary)]">{path}</h1>
+      {methods.map((m) => (
+        ops[m] && (
+          <article class="method-block mb-10 p-6 rounded-xl bg-[var(--gs-surface)] border border-[var(--gs-border)]">
+            <div class="flex items-center gap-4 mb-4">
+                <span class="uppercase font-mono font-bold text-[var(--gs-brand-blue)]">{m}</span>
+                <p class="text-[var(--gs-text-secondary)]">{ops[m].summary || ops[m].description}</p>
+            </div>
 
-  {methods.map((m) => (
-    ops[m] && (
-      <article class="method-block">
-        <h2>{m.toUpperCase()}</h2>
-        <p>{ops[m].description}</p>
+            {ops[m].parameters && (
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold uppercase text-[var(--gs-text-secondary)] mb-2">Parameters</h3>
+                    <ApiSchema schema={ops[m].parameters} />
+                </div>
+            )}
 
-        <h3>Parameters</h3>
-        <ApiSchema schema={ops[m].parameters} />
+            {ops[m].requestBody && ops[m].requestBody.content && (
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold uppercase text-[var(--gs-text-secondary)] mb-2">Request Body</h3>
+                    <ApiSchema schema={ops[m].requestBody.content} />
+                </div>
+            )}
 
-        <h3>Request Body</h3>
-        {ops[m].requestBody && (
-          <ApiSchema schema={ops[m].requestBody.content} />
-        )}
+            {ops[m].responses && (
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold uppercase text-[var(--gs-text-secondary)] mb-2">Responses</h3>
+                    <ApiSchema schema={ops[m].responses} />
+                </div>
+            )}
 
-        <h3>Responses</h3>
-        <ApiSchema schema={ops[m].responses} />
-
-        <h3>Try It</h3>
-        <TryItConsole
-          method={m}
-          path={path}
-          openapi={openapi}
-        />
-      </article>
-    )
-  ))}
+            <div class="mt-6 pt-4 border-t border-[var(--gs-border)]">
+                <h3 class="text-sm font-bold uppercase text-[var(--gs-text-secondary)] mb-2">Try It</h3>
+                <TryItConsole
+                method={m}
+                path={path}
+                openapi={openapi}
+                />
+            </div>
+          </article>
+        )
+      ))}
+      </>
+  ) : (
+      <div class="p-4 text-[var(--gs-text-secondary)]">
+        {endpoint ? `Endpoint not found: ${endpoint}` : 'Select an endpoint from the sidebar.'}
+      </div>
+  )}
 </section>
-
-<style>
-  .method-block {
-    margin-bottom: 2.5rem;
-    padding: 1.5rem;
-    border-radius: 1rem;
-    background: rgba(15,23,42,0.8);
-    border: 1px solid rgba(148,163,184,0.3);
-  }
-</style>
