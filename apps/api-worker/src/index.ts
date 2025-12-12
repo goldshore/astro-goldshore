@@ -29,4 +29,12 @@ v1.get('/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
 
 app.route('/v1', v1)
 
-export default app
+// user
+import user from "./routes/user";
+app.route("/user", user);
+
+// system
+import system from "./routes/system";
+app.route("/system", system);
+
+export default app;

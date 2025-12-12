@@ -1,19 +1,6 @@
-# ──────────────────────────────────────────────
-#  Git Merge Conflict / Backup Files
-# ──────────────────────────────────────────────
-*.orig
-*.BACKUP.*
-*.BASE.*
-*.LOCAL.*
-*.REMOTE.*
-*_BACKUP_*.txt
-*_BASE_*.txt
-*_LOCAL_*.txt
-*_REMOTE_*.txt
-
-# ──────────────────────────────────────────────
-#  macOS System Files
-# ──────────────────────────────────────────────
+############################
+# OS / Editor
+############################
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -25,127 +12,114 @@ Icon
 .TemporaryItems
 .Trashes
 .VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# AFP network junk
 .AppleDB
 .AppleDesktop
 Network Trash Folder
 Temporary Items
 .apdisk
-
-# iCloud ghost files
 *.icloud
 
-# ──────────────────────────────────────────────
-# Node / JS Tooling
-# ──────────────────────────────────────────────
-node_modules/
+############################
+# Git merge artifacts
+############################
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+*_BACKUP_*.txt
+*_BASE_*.txt
+*_LOCAL_*.txt
+*_REMOTE_*.txt
+
+############################
+# Logs & diagnostics
+############################
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
-
 report.*.json
-pids
-*.pid
-*.pid.lock
-*.seed
 
-lib-cov
-coverage
-*.lcov
-.nyc_output
-
-.grunt
-bower_components
-.lock-wscript
-
-# ESBuild / Webpack / Bundlers
-build/
-build/Release
-.webpack/
-.webpack-cache/
-
-# Snowpack
+############################
+# Node / Package managers
+############################
+node_modules/
+jspm_packages/
+bower_components/
 web_modules/
 
-# TypeScript cache
-*.tsbuildinfo
-
-# REPL history
+.npm/
 .node_repl_history
-
-# Output of "npm pack"
-*.tgz
-
-# Yarn v2+ cache
 .yarn/cache
 .yarn/unplugged
 .yarn/build-state.yml
 .yarn/install-state.gz
+.yarn-integrity
 .pnp.*
 
-# dotenv files (keep templates only)
-.env
-.env.*
-!.env.example
-!.dev.vars.example
-
-# Parcel, Vite, Rollup
-.cache/
-.parcel-cache/
-
-# Serverless, Dynamo, Fusebox
-.serverless/
-.dynamodb/
-.fusebox/
-
-# Nuxt / Next / Gatsby
+############################
+# Build outputs
+############################
+dist/
+out/
 .next/
 .nuxt/
 .vuepress/dist/
 .docusaurus/
-.temp/
-
-# SvelteKit
 .svelte-kit/
+.serverless/
+.webpack/
+build/Release/
+coverage/
+.nyc_output/
+*.lcov
 
-# VSCode test artifacts
-.vscode-test/
+############################
+# Tool caches
+############################
+.cache/
+.parcel-cache/
+.grunt/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.turbo/
 
-# ──────────────────────────────────────────────
-# Astro Framework
-# ──────────────────────────────────────────────
-.astro/
-dist/
-out/
+############################
+# TypeScript
+############################
+*.tsbuildinfo
 
-# Prevent Astro noise in monorepo package root
-apps/*/.astro/
-apps/*/dist/
-
-# ──────────────────────────────────────────────
-# Cloudflare Wrangler
-# ──────────────────────────────────────────────
-.wrangler/
+############################
+# Environment variables
+############################
+.env*
+!.env.example
 .dev.vars*
 !.dev.vars.example
 
-# Cloudflare Pages output
-functions/
+############################
+# Cloudflare / Wrangler
+############################
+.wrangler/
+worker-configuration.d.ts
 
-# ──────────────────────────────────────────────
-# Prevent Lockfile Wars (GoldShore policy)
-# ──────────────────────────────────────────────
-pnpm-lock.yaml
-package-lock.json
-yarn.lock
+############################
+# Astro
+############################
+.astro/
 
-# ──────────────────────────────────────────────
-# GoldShore Project Specific
-# ──────────────────────────────────────────────
-
-# Temp sync file to force rebuilds
-DUMMY_SYNC.txt
+############################
+# Generated OpenAPI artifacts
+############################
+apps/**/openapi/**/*.json
+apps/**/src/content/openapi/**/*.json
+# Generated OpenAPI files
+apps/web/src/content/openapi/*.json
+apps/web/openapi/*.json
+apps/web/openapi/openapi/*.json

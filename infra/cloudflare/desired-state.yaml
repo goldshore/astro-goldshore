@@ -57,16 +57,20 @@ cloudflare:
     projects:
       - name: "gs-web"
         repo: "astro-goldshore"
-        root_dir: "apps/web"
+        root_dir: "/" # Run from repo root for monorepo support
         production_branch: "main"
+        build_command: "pnpm --filter @goldshore/web build"
+        output_dir: "apps/web/dist"
         custom_domains:
           - "goldshore.ai"
           - "www.goldshore.ai"
 
       - name: "gs-admin"
         repo: "astro-goldshore"
-        root_dir: "apps/admin"
+        root_dir: "/" # Run from repo root for monorepo support
         production_branch: "main"
+        build_command: "pnpm --filter @goldshore/admin build"
+        output_dir: "apps/admin/dist"
         custom_domains:
           - "admin.goldshore.ai"
 
@@ -78,7 +82,7 @@ cloudflare:
           - pattern: "api.goldshore.ai/*"
         bindings:
           kv:
-            - name: "API_KV"
+            - name: "KV"
               namespace: "goldshore-api-kv"
           d1:
             - name: "DB"
@@ -121,6 +125,6 @@ cloudflare:
         destination: "inbox@goldshore.ai"
       addresses:
         - address: "ops@goldshore.ai"
-          destination: "your.personal.email@example.com"
+          destination: "your.personal.email@goldshore.ai"
         - address: "support@goldshore.ai"
-          destination: "your.personal.email@example.com"
+          destination: "your.personal.email@goldshore.ai"
