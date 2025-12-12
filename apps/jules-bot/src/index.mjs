@@ -11,6 +11,20 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = process.env.GITHUB_ORG;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 
+// Validate required environment variables
+if (!GITHUB_TOKEN) {
+  console.error("Missing required environment variable: GITHUB_TOKEN");
+  process.exit(1);
+}
+if (!GITHUB_ORG) {
+  console.error("Missing required environment variable: GITHUB_ORG");
+  process.exit(1);
+}
+if (!GITHUB_REPO) {
+  console.error("Missing required environment variable: GITHUB_REPO");
+  process.exit(1);
+}
+
 // Helper to post a comment using fetch (no external dependencies)
 async function postComment(prNumber, body) {
   const url = `https://api.github.com/repos/${GITHUB_ORG}/${GITHUB_REPO}/issues/${prNumber}/comments`;
@@ -27,7 +41,8 @@ async function postComment(prNumber, body) {
   });
 
   if (!res.ok) {
-    console.error(`Failed to post comment to PR #${prNumber}`, res.status, await res.text());
+    const safePrNumber = String(prNumber).replace(/\r|\n/g, '');
+    console.error(`Failed to post comment to PR #${safePrNumber} ${res.status} ${await res.text()}`);
   }
 }
 
@@ -67,7 +82,7 @@ async function handleEvent(eventName, payload) {
     if (!prNumber) return;
 
     // Command: /palette improve
-    if (body.startsWith('/palette') || body.startsWith('/palette improve')) {
+    if (body.startsWith('/palette')) {
       await postComment(prNumber, '🎨 Palette: scanning this PR for a micro-UX improvement…');
 
       await dispatchPaletteAction('PALETTE_RUN', {
@@ -86,13 +101,23 @@ async function handleEvent(eventName, payload) {
 // This part is just to make the file runnable/valid if needed.
 import http from 'http';
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const server = http.createServer(async (req, res) => {
   if (req.method === 'POST') {
     let body = '';
+    let bodyTooLarge = false;
     req.on('data', chunk => {
+      if (bodyTooLarge) return;
       body += chunk.toString();
+      if (body.length > MAX_BODY_SIZE) {
+        bodyTooLarge = true;
+        res.writeHead(413, { 'Content-Type': 'text/plain' });
+        res.end('Payload Too Large');
+        req.destroy();
+      }
     });
     req.on('end', async () => {
+      if (bodyTooLarge) return;
       try {
         const payload = JSON.parse(body);
         const eventName = req.headers['x-github-event'];

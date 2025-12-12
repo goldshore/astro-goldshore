@@ -1,4 +1,4 @@
-@import "@theme/tokens.css";
+@import "@goldshore/theme/tokens";
 
 :root {
   font-family: var(--font-body, sans-serif);

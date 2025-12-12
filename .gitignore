@@ -119,3 +119,7 @@ worker-configuration.d.ts
 ############################
 apps/**/openapi/**/*.json
 apps/**/src/content/openapi/**/*.json
+# Generated OpenAPI files
+apps/web/src/content/openapi/*.json
+apps/web/openapi/*.json
+apps/web/openapi/openapi/*.json
