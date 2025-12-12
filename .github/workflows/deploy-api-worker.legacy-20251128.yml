@@ -1,4 +1,6 @@
 name: Deploy astro-gs-api
+permissions:
+  contents: read
 
 on:
   push:
