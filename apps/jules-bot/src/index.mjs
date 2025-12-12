@@ -87,13 +87,23 @@ async function handleEvent(eventName, payload) {
 // This part is just to make the file runnable/valid if needed.
 import http from 'http';
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB max body size
 const server = http.createServer(async (req, res) => {
   if (req.method === 'POST') {
     let body = '';
+    let bodyTooLarge = false;
     req.on('data', chunk => {
+      if (bodyTooLarge) return;
       body += chunk.toString();
+      if (body.length > MAX_BODY_SIZE) {
+        bodyTooLarge = true;
+        res.writeHead(413, { 'Content-Type': 'text/plain' });
+        res.end('Payload Too Large');
+        req.destroy();
+      }
     });
     req.on('end', async () => {
+      if (bodyTooLarge) return;
       try {
         const payload = JSON.parse(body);
         const eventName = req.headers['x-github-event'];
