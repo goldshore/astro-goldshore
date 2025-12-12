@@ -27,7 +27,7 @@ async function postComment(prNumber, body) {
   });
 
   if (!res.ok) {
-    console.error(`Failed to post comment to PR #${prNumber}`, res.status, await res.text());
+    console.error('Failed to post comment to PR #%s', prNumber, res.status, await res.text());
   }
 }
 
