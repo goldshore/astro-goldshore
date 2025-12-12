@@ -1,20 +1,21 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import { Hono } from 'hono';
 
-type Bindings = {
-  API: Fetcher; // service binding to gs-api
-  AI: any;
-};
+const app = new Hono();
 
-const app = new Hono<{ Bindings: Bindings }>();
+const API_ORIGIN = 'https://api.goldshore.ai';
 
-app.use('*', cors());
+app.all('/*', async (c) => {
+  const url = new URL(c.req.url);
+  const target = API_ORIGIN + url.pathname + url.search;
 
-app.get("/health", (c) => c.json({ ok: true, service: "gs-gateway" }));
+  const req = new Request(target, {
+    method: c.req.method,
+    headers: c.req.raw.headers,
+    body: c.req.method !== "GET" && c.req.method !== "HEAD" ? c.req.raw.body : undefined
+  });
 
-// Forward all requests to API (matching wiring requirement gw.goldshore.ai/* -> API)
-app.all("*", async (c) => {
-  return c.env.API.fetch(c.req.raw);
+  const res = await fetch(req);
+  return res;
 });
 
 export default app;
