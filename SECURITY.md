@@ -14,7 +14,7 @@ We currently support the following versions with security updates:
 
 ## Reporting a Vulnerability
 
-To report a security vulnerability, please email us at <security@example.com> with the details of the issue.
+To report a security vulnerability, please email us at <security@goldshore.ai> with the details of the issue.
 
 Please include, if possible:
 - A description of the vulnerability and its impact.
