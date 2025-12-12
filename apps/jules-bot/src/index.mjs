@@ -68,7 +68,7 @@ async function handleEvent(eventName, payload) {
     if (!prNumber) return;
 
     // Command: /palette improve
-    if (body.startsWith('/palette') || body.startsWith('/palette improve')) {
+    if (body.startsWith('/palette')) {
       await postComment(prNumber, '🎨 Palette: scanning this PR for a micro-UX improvement…');
 
       await dispatchPaletteAction('PALETTE_RUN', {
