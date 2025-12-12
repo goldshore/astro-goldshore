@@ -11,6 +11,20 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_ORG = process.env.GITHUB_ORG;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 
+// Validate required environment variables
+if (!GITHUB_TOKEN) {
+  console.error("Missing required environment variable: GITHUB_TOKEN");
+  process.exit(1);
+}
+if (!GITHUB_ORG) {
+  console.error("Missing required environment variable: GITHUB_ORG");
+  process.exit(1);
+}
+if (!GITHUB_REPO) {
+  console.error("Missing required environment variable: GITHUB_REPO");
+  process.exit(1);
+}
+
 // Helper to post a comment using fetch (no external dependencies)
 async function postComment(prNumber, body) {
   const url = `https://api.github.com/repos/${GITHUB_ORG}/${GITHUB_REPO}/issues/${prNumber}/comments`;
