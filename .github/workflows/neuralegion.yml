@@ -148,6 +148,8 @@
 
 
 name: "NeuraLegion"
+permissions:
+  contents: read
 
 on:
   push:
