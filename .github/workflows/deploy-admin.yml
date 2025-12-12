@@ -1,4 +1,6 @@
 name: Deploy Astro GS Admin
+permissions:
+  contents: read
 
 on:
   push:
