@@ -27,7 +27,8 @@ async function postComment(prNumber, body) {
   });
 
   if (!res.ok) {
-    console.error('Failed to post comment to PR #%s', prNumber, res.status, await res.text());
+    const safePrNumber = String(prNumber).replace(/\r|\n/g, '');
+    console.error('Failed to post comment to PR #%s', safePrNumber, res.status, await res.text());
   }
 }
 
