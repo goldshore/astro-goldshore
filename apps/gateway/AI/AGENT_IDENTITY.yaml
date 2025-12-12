@@ -1,0 +1,5 @@
+repository: astro-gs-gateway
+domain: https://gw.goldshore.ai
+cloudflare_project: astro-gs-gateway
+scope: gateway_worker
+repo_lock: true

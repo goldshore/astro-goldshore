@@ -1,0 +1,5 @@
+repository: astro-gs-api
+domain: https://api.goldshore.ai
+cloudflare_project: astro-gs-api
+scope: api_worker
+repo_lock: true

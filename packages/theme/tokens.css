@@ -1,0 +1,192 @@
+/* ===========================================
+   GOLD SHORE LABS — DESIGN TOKENS (GLOBAL)
+   tokens.css
+   =========================================== */
+
+/* ROOT (Light Mode) ------------------------- */
+:root {
+  /* Brand Colors */
+  --gs-blue-alcantara: #0f1a2c;            /* deep premium alcantara navy */
+  --gs-blue-alcantara-soft: #1a2842;
+  --gs-blue-alcantara-glow: #4da8ff33;
+
+  --gs-titanium-green: #9ecb77;            /* anodized titanium green */
+  --gs-titanium-green-bright: #c8ff9b;
+
+  --gs-neon-orange: #ff7a33;               /* Cloudflare-proxy style orange */
+  --gs-neon-orange-glow: #ff7a3333;
+
+  --gs-golden-ember: #ffcc55;              /* yellow-gold accent */
+  --gs-golden-ember-soft: #ffe8a6;
+
+  --gs-carbon: #121212;                    /* carbon fiber black */
+  --gs-carbon-light: #1f1f1f;
+  --gs-carbon-wireframe: #1b1b1b;
+
+  --gs-blueprint: #0b0f19;                 /* blueprint/CAD black-blue */
+  --gs-blueprint-line: #4a5a79;
+
+  /* Text Colors */
+  --gs-text-primary: #e6ecf8;
+  --gs-text-secondary: #c4c9d4;
+  --gs-text-muted: #8891a3;
+  --gs-text-invert: #0f1012;
+
+  /* Surfaces */
+  --gs-surface-0: var(--gs-blue-alcantara);
+  --gs-surface-1: #141f33;
+  --gs-surface-2: #1c2b45;
+  --gs-surface-glass: rgba(255, 255, 255, 0.05);
+
+  /* Borders */
+  --gs-border-light: rgba(255, 255, 255, 0.08);
+  --gs-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Shadows */
+  --gs-shadow-1: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --gs-shadow-2: 0 5px 20px rgba(0, 0, 0, 0.45);
+  --gs-shadow-neon-orange: 0 0 18px var(--gs-neon-orange-glow);
+  --gs-shadow-glow-blue: 0 0 22px var(--gs-blue-alcantara-glow);
+
+  /* Radii */
+  --gs-radius-xs: 4px;
+  --gs-radius-sm: 6px;
+  --gs-radius-md: 12px;
+  --gs-radius-lg: 18px;
+  --gs-radius-xl: 28px;
+  --gs-radius-pill: 999px;
+
+  /* Spacing */
+  --gs-space-1: 4px;
+  --gs-space-2: 8px;
+  --gs-space-3: 12px;
+  --gs-space-4: 16px;
+  --gs-space-5: 20px;
+  --gs-space-6: 28px;
+  --gs-space-7: 36px;
+  --gs-space-8: 48px;
+
+  /* Typography */
+  --font-body: "Inter", -apple-system, system-ui, sans-serif;
+  --font-display: "SF Pro Display", "Inter", sans-serif;
+  --font-tech: "Orbitron", "Inter", sans-serif;
+
+  /* Font Sizes */
+  --gs-text-xs: 0.75rem;
+  --gs-text-sm: 0.875rem;
+  --gs-text-md: 1rem;
+  --gs-text-lg: 1.25rem;
+  --gs-text-xl: 1.75rem;
+  --gs-text-xxl: 2.75rem;
+
+  /* Motion */
+  --gs-transition-fast: 120ms ease;
+  --gs-transition-normal: 220ms ease;
+  --gs-transition-slow: 380ms ease;
+
+  /* Gradients */
+  --gs-gradient-blue: linear-gradient(145deg, #132037 0%, #0f1a2c 100%);
+  --gs-gradient-orange: linear-gradient(145deg, #ff7a33 0%, #ff9b4d 100%);
+  --gs-gradient-titanium: linear-gradient(130deg, #c8ff9b 0%, #9ecb77 50%, #6a9150 100%);
+  --gs-gradient-carbon: radial-gradient(circle at 20% 20%, #1f1f1f, #111);
+
+  /* Component Tokens ------------------------ */
+
+  /* Buttons */
+  --btn-bg-default: var(--gs-surface-1);
+  --btn-bg-hover: var(--gs-surface-2);
+  --btn-bg-primary: var(--gs-neon-orange);
+  --btn-bg-primary-hover: #ff9a55;
+
+  --btn-text-default: var(--gs-text-primary);
+  --btn-text-primary: #0f0f0f;
+
+  /* Glass Panels */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-blur: blur(8px);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  /* Gauges / Dials */
+  --gauge-ring: var(--gs-titanium-green);
+  --gauge-ring-secondary: var(--gs-golden-ember);
+  --gauge-background: rgba(255, 255, 255, 0.04);
+
+  /* Cards */
+  --card-bg: var(--gs-surface-1);
+  --card-bg-hover: var(--gs-surface-2);
+  --card-border: var(--gs-border-light);
+
+  /* Diagnostics / System Status */
+  --status-ok: #75ff9b;
+  --status-warn: #ffd654;
+  --status-critical: #ff4a4a;
+
+  /* Accent Lights */
+  --light-blue: #4da8ff;
+  --light-orange: #ffb080;
+  --light-green: #a4ffab;
+}
+
+/* DARK MODE -------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gs-blue-alcantara: #0c1525;
+    --gs-blue-alcantara-soft: #152236;
+
+    --gs-text-primary: #f0f5ff;
+    --gs-text-secondary: #c7d0e0;
+
+    --card-bg: #121c2e;
+    --card-bg-hover: #1a273c;
+
+    --gauge-background: rgba(255,255,255,0.03);
+  }
+}
+
+/* LIGHT MODE -------------------------------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --gs-blue-alcantara: #f0f4ff;
+    --gs-blue-alcantara-soft: #ffffff;
+    --gs-text-primary: #1b1d20;
+    --gs-text-secondary: #3c4758;
+    --card-bg: #ffffff;
+    --card-bg-hover: #f2f5fc;
+  }
+}
+
+/* UTILITIES -------------------------------- */
+.gsl-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--gs-radius-lg);
+}
+
+.gsl-card {
+  background: var(--card-bg);
+  border-radius: var(--gs-radius-md);
+  box-shadow: var(--gs-shadow-1);
+  padding: var(--gs-space-4);
+  border: 1px solid var(--card-border);
+}
+
+.gsl-btn {
+  font-family: var(--font-body);
+  padding: var(--gs-space-2) var(--gs-space-4);
+  border-radius: var(--gs-radius-pill);
+  transition: var(--gs-transition-fast);
+  cursor: pointer;
+}
+
+.gsl-btn-primary {
+  background: var(--btn-bg-primary);
+  color: var(--btn-text-primary);
+  box-shadow: var(--gs-shadow-neon-orange);
+}
+
+.gsl-btn-primary:hover {
+  background: var(--btn-bg-primary-hover);
+}
+
+/* END -------------------------------------- */

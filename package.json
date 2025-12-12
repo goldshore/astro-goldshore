@@ -4,7 +4,7 @@
   "private": true,
   "description": "GoldShore organization monorepo",
   "scripts": {
-    "build": "pnpm -r --if-present build",
+    "build": "pnpm -r --filter=\"./apps/*\" build",
     "dev": "pnpm -r --parallel --filter=\"./apps/*\" dev",
     "preview": "pnpm -r --filter=\"./apps/*\" preview",
     "deploy": "pnpm -r --filter=\"./apps/*\" deploy",
@@ -12,10 +12,13 @@
     "format": "prettier --write ."
   },
   "devDependencies": {
+    "@astrojs/cloudflare": "^12.6.11",
+    "astro": "^5.16.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
-    "typescript": "^5.4.2"
+    "typescript": "^5.9.3",
+    "wrangler": "^3.0.0"
   },
   "packageManager": "pnpm@8.15.5"
 }

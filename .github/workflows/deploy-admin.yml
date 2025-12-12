@@ -1,0 +1,31 @@
+name: Deploy Astro GS Admin
+
+on:
+  push:
+    paths:
+      - "apps/admin/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install
+
+      - name: Build Admin
+        run: |
+          cd apps/admin
+          npm run build
+
+      - name: Deploy Admin
+        working-directory: apps/admin
+        run: npx wrangler pages deploy dist
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
