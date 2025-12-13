@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "astro": "^5.15.9",
-    "@astrojs/cloudflare": "^11.0.1",
-    "@goldshore/theme": "workspace:*"
+    "@goldshore/theme": "workspace:*",
+    "@goldshore/ui": "workspace:*"
+    "@astrojs/cloudflare": "^11.0.1"
   }
 }

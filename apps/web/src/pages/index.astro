@@ -1,5 +1,6 @@
 ---
 import '@goldshore/theme/tokens';
+import { GSButton } from '@goldshore/ui';
 
 // Goldshore Landing Page
 // Aesthetic: Military x Tech, Sports Car, Utility
@@ -16,12 +17,12 @@ import MarketingLayout from '../layouts/MarketingLayout.astro';
         </p>
 
         <div class="mt-12 flex justify-center gap-4">
-            <a href="/about" class="gs-btn gs-btn--gold">
+            <GSButton href="/about" variant="primary">
                 Learn More
-            </a>
-            <a href="/contact" class="px-6 py-3 rounded text-sm font-semibold border transition-colors contact-link" style="border-color: var(--gs-border); color: var(--gs-text-primary);">
+            </GSButton>
+            <GSButton href="/contact" variant="secondary">
                 Get in Touch
-            </a>
+            </GSButton>
         </div>
     </section>
 
