@@ -15,14 +15,19 @@ jobs:
   deploy-preview-api:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
-      - name: Install deps
-        run: npm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Deploy API worker (preview)
         working-directory: apps/api-worker
