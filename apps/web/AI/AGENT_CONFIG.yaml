@@ -1,8 +1,0 @@
-bootstrap:
-  - read: ../../packages/theme/THEME.md
-  - read: ../../packages/theme/tokens.css
-  - read: ../../packages/ui/docs/COMPONENTS.md
-
-requirements:
-  enforce_theme: true
-  enforce_idempotency: true

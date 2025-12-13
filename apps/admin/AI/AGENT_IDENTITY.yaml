@@ -1,5 +1,0 @@
-repository: astro-gs-admin
-domain: https://admin.goldshore.ai
-cloudflare_project: astro-gs-admin
-scope: admin_frontend
-repo_lock: true
