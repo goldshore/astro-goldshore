@@ -42,7 +42,7 @@ async function postComment(prNumber, body) {
 
   if (!res.ok) {
     const safePrNumber = String(prNumber).replace(/\r|\n/g, '');
-    console.error(`Failed to post comment to PR #${safePrNumber} ${res.status} ${await res.text()}`);
+    console.error(`Failed to post comment to PR #${safePrNumber}: ${res.status} ${res.statusText}: ${await res.text()}`);
   }
 }
 
