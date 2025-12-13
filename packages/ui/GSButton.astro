@@ -1,6 +1,6 @@
 ---
 const { href, variant = 'primary', class: className, ...attrs } = Astro.props;
-let buttonClass = 'px-6 py-3 font-semibold rounded-lg text-sm transition';
+let buttonClass = 'px-6 py-3 font-semibold rounded-lg text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gs-brand-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--gs-bg)]';
 if (variant === 'primary') {
     buttonClass += ' gs-button-primary';
 } else if (variant === 'secondary') {
