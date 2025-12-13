@@ -1,7 +1,7 @@
 // infra/cron/helpers/github.ts
 import { Octokit } from "octokit";
 
-const GH_TOKEN = process.env.GH_TOKEN!;
+const GH_TOKEN = process.env.GH_TOKEN;
 if (!GH_TOKEN) throw new Error("Missing GH_TOKEN");
 
 export const gh = new Octokit({ auth: GH_TOKEN });
