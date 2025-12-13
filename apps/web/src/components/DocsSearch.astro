@@ -50,6 +50,9 @@ let results = [];
         ).join('');
       }
     } catch (e) {
+      if (resultsDiv) {
+        resultsDiv.innerHTML = '<div class="search-error" style="color: red; margin-top: 0.5em;">Sorry, search failed. Please try again.</div>';
+      }
       console.error("Search failed", e);
     }
   }
