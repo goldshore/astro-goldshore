@@ -65,7 +65,7 @@ async function dispatchPaletteAction(type, data) {
   });
 
   if (!res.ok) {
-    console.error('Failed to dispatch Palette Action', res.status, await res.text());
+    console.error(`Failed to dispatch Palette Action: ${res.status} ${await res.text()}`);
   }
 }
 
