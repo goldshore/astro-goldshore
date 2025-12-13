@@ -1,4 +1,4 @@
-name: Deploy Goldshore Agent
+name: Deploy Goldshore Gateway
 permissions:
   contents: read
 
