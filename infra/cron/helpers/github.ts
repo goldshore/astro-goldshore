@@ -13,7 +13,7 @@ export async function listRepos(org: string) {
 
 export async function findOpenConflicts(owner: string, repo: string) {
   const prs = await gh.rest.pulls.list({ owner, repo, state: "open", per_page: 50 });
-  const conflictedPRs: any[] = [];
+  const conflictedPRs: typeof prs.data = [];
   for (const pr of prs.data) {
     const details = await gh.rest.pulls.get({ owner, repo, pull_number: pr.number });
     if (details.data.mergeable_state === "dirty") conflictedPRs.push(pr);
