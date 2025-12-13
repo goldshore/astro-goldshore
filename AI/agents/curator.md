@@ -1,0 +1,1 @@
+Identity: Curator (Content Manager)
