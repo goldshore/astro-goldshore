@@ -9,6 +9,10 @@ type Env = {
   ENV: string;
 };
 
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
+
+const API_ORIGIN = 'https://api.goldshore.ai';
 const app = new Hono<{ Bindings: Env }>();
 
 // Sentinel: Add security headers to all responses
