@@ -45,6 +45,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: astro-gs-admin
+          projectName: preview-admin
           directory: apps/admin/dist
           branch: ${{ github.head_ref || github.ref_name }}
