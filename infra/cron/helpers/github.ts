@@ -7,9 +7,9 @@ if (!GH_TOKEN) throw new Error("Missing GH_TOKEN");
 export const gh = new Octokit({ auth: GH_TOKEN });
 
 export async function listRepos(org: string) {
-  const { data } = await gh.rest.repos.listForOrg({ org, per_page: 100 });
-  return data;
+  return await gh.paginate(gh.rest.repos.listForOrg, { org, per_page: 100 });
 }
+
 
 export async function findOpenConflicts(owner: string, repo: string) {
   const prs = await gh.rest.pulls.list({ owner, repo, state: "open", per_page: 50 });
