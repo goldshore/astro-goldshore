@@ -14,15 +14,22 @@ let results = [];
   />
 
   <div id="results">
-    {results.map((r) => (
-      <a href={r.url}>{r.title}</a>
-    ))}
   </div>
 </div>
 
 <script>
   const input = document.getElementById('docs-search-input');
   const resultsDiv = document.getElementById('results');
+
+  // Optimization: Debounce function to prevent API calls on every keystroke
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
 
   async function runSearch(query) {
     if (!query.trim()) {
@@ -32,6 +39,11 @@ let results = [];
 
     try {
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query));
+      if (!res.ok) {
+        if (resultsDiv) resultsDiv.innerHTML = '';
+        console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
+        return;
+      }
       const results = await res.json();
 
       if (resultsDiv) {
@@ -40,13 +52,19 @@ let results = [];
         ).join('');
       }
     } catch (e) {
+      if (resultsDiv) {
+        resultsDiv.innerHTML = '<div class="search-error" style="color: red; margin-top: 0.5em;">Sorry, search failed. Please try again.</div>';
+      }
       console.error("Search failed", e);
     }
   }
 
   if (input) {
-    input.addEventListener('input', (e) => {
+    // Wait 300ms after user stops typing before searching
+    const debouncedSearch = debounce((e) => {
       runSearch((e.target as HTMLInputElement).value);
-    });
+    }, 300);
+
+    input.addEventListener('input', debouncedSearch);
   }
 </script>
