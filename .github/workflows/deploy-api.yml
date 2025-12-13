@@ -1,6 +1,4 @@
 name: Deploy Astro GS API
-permissions:
-  contents: read
 
 on:
   push:
