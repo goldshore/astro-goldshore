@@ -42,6 +42,11 @@ let results = [];
 
     try {
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query));
+      if (!res.ok) {
+        if (resultsDiv) resultsDiv.innerHTML = '';
+        console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
+        return;
+      }
       const results = await res.json();
 
       if (resultsDiv) {
