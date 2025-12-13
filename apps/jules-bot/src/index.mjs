@@ -125,7 +125,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200);
         res.end('OK');
       } catch (err) {
-        console.error(err);
+        console.error(`Error handling event "${eventName}":`, err);
         res.writeHead(500);
         res.end('Error');
       }
