@@ -41,6 +41,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: astro-gs-web
+          projectName: gs-web
           directory: apps/web/dist
           branch: main
