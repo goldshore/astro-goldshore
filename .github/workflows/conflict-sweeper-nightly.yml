@@ -2,25 +2,33 @@ name: Conflict Sweeper (Nightly)
 
 on:
   schedule:
-    - cron: "15 4 * * *"
+    - cron: '0 2 * * *' # 2 AM UTC
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
-  conflict-sweeper:
-    name: Rebase and mergeability sweep
+  sweeper:
     runs-on: ubuntu-latest
-    env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
-      - name: Setup Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Preview CONFLICT-SWEEPER prompt
-        run: node ./.Jules/run-conflict-sweeper.jsagent
+          cache: 'pnpm'
+
+      - name: Configure Git
+        run: |
+          git config user.name "Jules Bot"
+          git config user.email "jules@goldshore.ai"
+
+      - name: Run Conflict Sweeper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .Jules/run-conflict-sweeper.jsagent

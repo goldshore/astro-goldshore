@@ -1,25 +1,34 @@
-name: SENTINEL (PR)
+name: Sentinel (PR Doctor)
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  sentinel-pr-check:
-    name: Run SENTINEL guardrails
+  sentinel:
     runs-on: ubuntu-latest
-    env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
-      - name: Setup Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Preview SENTINEL prompt
-        run: node ./.Jules/run-sentinel.jsagent
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Sentinel
+        run: node .Jules/run-sentinel.jsagent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

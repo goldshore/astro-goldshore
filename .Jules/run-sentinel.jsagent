@@ -1,56 +1,141 @@
-#!/usr/bin/env node
-/**
- * SENTINEL bootstrapper
- * - surfaces the PR Doctor prompt
- * - provides a ready-to-use Jules API curl snippet when JULES_API_KEY is present
- */
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
-const fs = require('node:fs');
-const path = require('node:path');
+// Configuration
+const CONFIG = {
+  ignoreDirs: ['node_modules', '.git', 'dist', '.turbo', '.astro'],
+  extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json'],
+};
 
-const repoRoot = process.cwd();
-const promptPath = path.join(repoRoot, 'AI', 'prompts', 'pr-doctor.md');
-
-function readPrompt() {
-  if (!fs.existsSync(promptPath)) {
-    console.error(`Prompt not found at ${promptPath}`);
-    process.exit(1);
+// Utilities
+function run(cmd, ignoreError = false) {
+  try {
+    return execSync(cmd, { stdio: 'pipe', encoding: 'utf-8' }).trim();
+  } catch (e) {
+    if (!ignoreError) console.error(`Failed: ${cmd}`, e.message);
+    return null;
   }
-  return fs.readFileSync(promptPath, 'utf8');
 }
 
-function printHeader(title) {
-  console.log(`\n=== ${title} ===`);
+function listFiles(dir) {
+  let results = [];
+  const list = fs.readdirSync(dir);
+  list.forEach(file => {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat && stat.isDirectory()) {
+      if (!CONFIG.ignoreDirs.includes(file)) {
+        results = results.concat(listFiles(filePath));
+      }
+    } else {
+      if (CONFIG.extensions.includes(path.extname(file))) {
+        results.push(filePath);
+      }
+    }
+  });
+  return results;
 }
 
-function emitCurlExample() {
-  const apiKey = process.env.JULES_API_KEY || '';
-  const branch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || '';
+// Checks
+const CHECKS = {
+  unpinnedActions: {
+    name: "Unpinned GitHub Actions",
+    regex: /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g,
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.yml') && !filePath.endsWith('.yaml')) return [];
+      const matches = [];
+      let match;
+      while ((match = CHECKS.unpinnedActions.regex.exec(content)) !== null) {
+        matches.push({
+          line: content.substring(0, match.index).split('\n').length,
+          match: match[0],
+          action: match[1],
+          version: match[2]
+        });
+      }
+      return matches;
+    }
+  },
+  multipleAstroBlocks: {
+    name: "Multiple Astro Component Definitions",
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.astro')) return [];
+      const fenceCount = (content.match(/^---/gm) || []).length;
+      if (fenceCount > 2) {
+          return [{ message: `Found ${fenceCount} '---' fences. Expected <= 2.` }];
+      }
+      return [];
+    }
+  },
+  missingEnvTypes: {
+    name: "Missing Env Types",
+    check: (content, filePath) => {
+      if (!filePath.endsWith('.ts') && !filePath.endsWith('.astro')) return [];
+      if (content.includes('Env') && !content.includes('interface Env') && !content.includes('import') && !content.includes('/// <reference')) {
+        return [];
+      }
+      return [];
+    }
+  },
+  nestedLockfiles: {
+    name: "Nested Lockfiles",
+    check: (content, filePath) => {
+        if (path.basename(filePath) === 'pnpm-lock.yaml' && filePath !== 'pnpm-lock.yaml') {
+            return [{ message: "Nested pnpm-lock.yaml found." }];
+        }
+        if (path.basename(filePath) === 'package-lock.json' || path.basename(filePath) === 'yarn.lock') {
+            return [{ message: `Forbidden lockfile found: ${path.basename(filePath)}` }];
+        }
+        return [];
+    }
+  }
+};
 
-  if (!apiKey) {
-    console.log('JULES_API_KEY not provided; printing prompt for manual use.');
-    return;
+// Main
+async function main() {
+  console.log("Starting Sentinel (Repo Doctor)...");
+
+  const files = listFiles('.');
+  const report = {};
+  let fail = false;
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf-8');
+
+    // Check Nested Lockfiles
+    const lockfileErrors = CHECKS.nestedLockfiles.check(content, file);
+    if (lockfileErrors.length > 0) {
+        report[file] = (report[file] || []).concat(lockfileErrors);
+        fail = true;
+    }
+
+    // Unpinned Actions
+    const unpinned = CHECKS.unpinnedActions.check(content, file);
+    if (unpinned.length > 0) {
+        report[file] = (report[file] || []).concat(unpinned.map(u => ({ message: `Unpinned action: ${u.match}` })));
+    }
+
+    // Astro Blocks
+    const astro = CHECKS.multipleAstroBlocks.check(content, file);
+    if (astro.length > 0) {
+        report[file] = (report[file] || []).concat(astro);
+        fail = true;
+    }
   }
 
-  const sessionName = branch ? `SENTINEL-${branch}` : 'SENTINEL-ad-hoc';
-  const payload = {
-    displayName: sessionName,
-    prompt: readPrompt(),
-  };
+  // Output Report
+  if (Object.keys(report).length > 0) {
+    console.log("\n=== Sentinel Report ===");
+    for (const [file, issues] of Object.entries(report)) {
+      console.log(`\nFile: ${file}`);
+      issues.forEach(i => console.log(`  - ${i.message}`));
+    }
 
-  console.log('Curl example (replace <repo> path if needed):');
-  console.log(
-    `curl -X POST https://jules.googleapis.com/v1alpha/sessions \\\n  -H "X-Goog-Api-Key: ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(payload)}'`
-  );
+    if (fail) process.exit(1);
+  } else {
+    console.log("No issues found.");
+  }
 }
 
-function main() {
-  printHeader('SENTINEL prompt');
-  console.log(readPrompt());
-  printHeader('Usage');
-  console.log('- Run from CI on pull_request or nightly to surface diagnostics.');
-  console.log('- The prompt below is designed for safe, mechanical fixes.');
-  emitCurlExample();
-}
-
-main();
+main().catch(console.error);

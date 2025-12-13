@@ -1,53 +1,72 @@
-#!/usr/bin/env node
-/**
- * CONFLICT-SWEEPER bootstrapper
- * - surfaces the conflict resolution prompt
- * - offers a Jules API example if a key is present
- */
+const { execSync } = require('child_process');
+const fs = require('fs');
 
-const fs = require('node:fs');
-const path = require('node:path');
-
-const repoRoot = process.cwd();
-const promptPath = path.join(repoRoot, 'AI', 'prompts', 'conflict-sweeper.md');
-
-function readPrompt() {
-  if (!fs.existsSync(promptPath)) {
-    console.error(`Prompt not found at ${promptPath}`);
-    process.exit(1);
+function run(cmd, ignoreError = false) {
+  try {
+    return execSync(cmd, { stdio: 'pipe', encoding: 'utf-8' }).trim();
+  } catch (e) {
+    if (!ignoreError) console.error(`Failed: ${cmd}`, e.message);
+    return null;
   }
-  return fs.readFileSync(promptPath, 'utf8');
 }
 
-function printHeader(title) {
-  console.log(`\n=== ${title} ===`);
+async function main() {
+    console.log("Starting Conflict Sweeper...");
+
+    // Requires GITHUB_TOKEN
+    if (!process.env.GITHUB_TOKEN) {
+        console.error("GITHUB_TOKEN is required.");
+        process.exit(1);
+    }
+
+    // List open PRs
+    const prsJson = run(`gh pr list --json number,headRefName,mergeable --state open`);
+    if (!prsJson) return;
+
+    const prs = JSON.parse(prsJson);
+    console.log(`Found ${prs.length} open PRs.`);
+
+    for (const pr of prs) {
+        console.log(`Processing PR #${pr.number} (${pr.headRefName})...`);
+
+        if (pr.mergeable === 'CONFLICTING') {
+            console.log(`  -> CONFLICT DETECTED`);
+
+            // Attempt Rebase strategy
+            run(`gh pr checkout ${pr.number}`);
+            run(`git config user.name "Jules Bot"`);
+            run(`git config user.email "jules@goldshore.ai"`);
+
+            try {
+                run(`git rebase origin/main`);
+                console.log(`  -> Rebase successful`);
+                run(`git push --force-with-lease`);
+            } catch (e) {
+                console.log(`  -> Rebase failed. Attempting Lockfile Regen strategy.`);
+                run(`git rebase --abort`, true);
+
+                try {
+                    run(`git merge origin/main --no-commit`);
+                } catch (mergeErr) {
+                     const status = run(`git status --porcelain`);
+                     const conflicts = status.split('\n').filter(l => l.startsWith('UU'));
+
+                     if (conflicts.length === 1 && conflicts[0].includes('pnpm-lock.yaml')) {
+                         console.log("  -> Lockfile conflict only. Regenerating...");
+                         run(`rm pnpm-lock.yaml`);
+                         run(`pnpm install`);
+                         run(`git add pnpm-lock.yaml`);
+                         run(`git commit -m "chore: resolve lockfile conflict"`);
+                         run(`git push`);
+                     } else {
+                         console.log("  -> Complex conflict. Human intervention needed.");
+                     }
+                }
+            }
+        } else {
+            console.log(`  -> Clean.`);
+        }
+    }
 }
 
-function emitCurlExample() {
-  const apiKey = process.env.JULES_API_KEY || '';
-  if (!apiKey) {
-    console.log('JULES_API_KEY not provided; printing prompt for manual use.');
-    return;
-  }
-
-  const payload = {
-    displayName: 'CONFLICT-SWEEPER',
-    prompt: readPrompt(),
-  };
-
-  console.log('Curl example:');
-  console.log(
-    `curl -X POST https://jules.googleapis.com/v1alpha/sessions \\\n  -H "X-Goog-Api-Key: ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(payload)}'`
-  );
-}
-
-function main() {
-  printHeader('Conflict Sweeper prompt');
-  console.log(readPrompt());
-  printHeader('Usage');
-  console.log('- Run nightly or on-demand to clear merge conflicts.');
-  console.log('- Pair with lockfile discipline checks to prevent thrash.');
-  emitCurlExample();
-}
-
-main();
+main().catch(console.error);
