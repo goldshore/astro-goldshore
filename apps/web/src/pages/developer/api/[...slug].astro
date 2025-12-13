@@ -3,31 +3,15 @@ import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
 // Import the data directly
 // @ts-ignore
-import openapi from '../../../data/v1.json';
-
-const { slug } = Astro.params;
-// Handle undefined slug (root /api/) if needed, or just /api/something
-const endpoint = slug || '';
----
-
-<div class="api-container">
-  <ApiSidebar openapi={openapi} />
-  <main>
-    <ApiEndpoint openapi={openapi} endpoint={endpoint} />
-  </main>
-</div>
-
-<style>
-  .api-container { display: flex; min-height: 100vh; }
-  main { flex: 1; }
+import openapiData from '../../../data/v1.json';
 
 const version = 'v1';
-// Assuming /openapi/v1.json as per instructions.
-// If publicDir is ./openapi, then we need apps/web/openapi/openapi/v1.json to exist.
-const openapi = await fetch(new URL(`/openapi/${version}.json`, Astro.url)).then(r => r.json());
+const openapi = openapiData;
 
-const { slug = [] } = Astro.params;
-const endpointId = slug.join('/');
+const { slug } = Astro.params;
+// Handle slug as array or string depending on Astro version/config, usually string for [...slug] but params might be parsed.
+// actually Astro.params.slug is a string for [...slug].
+const endpointId = slug || '';
 
 const paths = Object.entries(openapi.paths || {});
 ---
