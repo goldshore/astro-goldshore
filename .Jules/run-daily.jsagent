@@ -12,8 +12,10 @@ const { execSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-// --- Helpers ---
+// --- Configurable constants ---
+const MAX_BRANCH_AGE_DAYS = 90;
 
+// --- Helpers ---
 function sh(cmd, cwd = process.cwd()) {
   try {
     return execSync(cmd, { stdio: "pipe", cwd, maxBuffer: 1024 * 1024 * 10 }).toString("utf8").trim();
@@ -90,7 +92,7 @@ function shouldSkip(branch) {
   const age = branchAgeDays(branch);
   if (["main", "develop"].includes(branch)) return false;
   if (branch.startsWith("release/")) return false;
-  return age > 90;
+  return age > MAX_BRANCH_AGE_DAYS;
 }
 
 function checkout(branch) {
