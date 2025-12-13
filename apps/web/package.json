@@ -13,5 +13,6 @@
     "astro": "^5.15.9",
     "@goldshore/theme": "workspace:*",
     "@goldshore/ui": "workspace:*"
+    "@astrojs/cloudflare": "^11.0.1"
   }
 }

@@ -315,9 +315,9 @@ function applySafeFixes() {
       const ignoredFiles = sh("git ls-files -ci --exclude-standard");
       if (ignoredFiles) {
           sh("git ls-files -ci --exclude-standard -z | xargs -0 -r git rm -r --cached");
-
+      }
   } catch (e) {
-
+      // console.error("Failed to clean ignored files:", e.message);
   }
 
   // Ensure .gitignore exists
