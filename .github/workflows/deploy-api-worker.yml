@@ -9,7 +9,6 @@ on:
       - "apps/api-worker/**"
       - "packages/**"
       - "package.json"
-      - "pnpm-lock.yaml"
 
 jobs:
   deploy:
@@ -28,7 +27,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Deploy to Cloudflare
         working-directory: apps/api-worker
