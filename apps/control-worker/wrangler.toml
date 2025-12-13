@@ -23,3 +23,7 @@ database_id = "gs_database_id_001"
 [[r2_buckets]]
 binding = "gs-assets"
 bucket_name = "gs-assets"
+[[services]]
+binding = "GATEWAY"
+service = "gs-gateway"
+environment = "production"
