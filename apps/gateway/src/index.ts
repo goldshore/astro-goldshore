@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
+import { secureHeaders } from 'hono/secure-headers';
 
 const app = new Hono();
+
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
 
 const API_ORIGIN = 'https://api.goldshore.ai';
 
