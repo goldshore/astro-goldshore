@@ -108,7 +108,7 @@ const server = http.createServer(async (req, res) => {
     let bodyTooLarge = false;
     req.on('data', chunk => {
       if (bodyTooLarge) return;
-      body += chunk.toString();
+      body += chunk.toString('utf8');
       if (body.length > MAX_BODY_SIZE) {
         bodyTooLarge = true;
         res.writeHead(413, { 'Content-Type': 'text/plain' });
