@@ -24,6 +24,16 @@ let results = [];
   const input = document.getElementById('docs-search-input');
   const resultsDiv = document.getElementById('results');
 
+  // Optimization: Debounce function to prevent API calls on every keystroke
+  function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+
   async function runSearch(query) {
     if (!query.trim()) {
       if(resultsDiv) resultsDiv.innerHTML = '';
@@ -45,8 +55,11 @@ let results = [];
   }
 
   if (input) {
-    input.addEventListener('input', (e) => {
+    // Wait 300ms after user stops typing before searching
+    const debouncedSearch = debounce((e) => {
       runSearch((e.target as HTMLInputElement).value);
-    });
+    }, 300);
+
+    input.addEventListener('input', debouncedSearch);
   }
 </script>
