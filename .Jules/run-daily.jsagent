@@ -14,6 +14,8 @@ const path = require("node:path");
 
 // --- Configurable constants ---
 const MAX_BRANCH_AGE_DAYS = 90;
+const MAX_BRANCH_AGE_DAYS = 90;
+// --- Helpers ---
 
 // --- Helpers ---
 function sh(cmd, cwd = process.cwd()) {
@@ -90,7 +92,7 @@ function prioritySort(branches) {
 
 function shouldSkip(branch) {
   const age = branchAgeDays(branch);
-  if (["main", "develop"].includes(branch)) return false;
+  return age > MAX_BRANCH_AGE_DAYS;
   if (branch.startsWith("release/")) return false;
   return age > MAX_BRANCH_AGE_DAYS;
 }
