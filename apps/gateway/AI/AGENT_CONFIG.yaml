@@ -1,6 +1,0 @@
-bootstrap:
-  - read: ../../packages/schema/openapi.yml
-
-requirements:
-  enforce_schema: true
-  enforce_idempotency: true
