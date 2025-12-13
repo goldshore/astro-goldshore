@@ -1,11 +1,11 @@
-name: Deploy Astro GS Admin
+name: Deploy Goldshore Admin
 permissions:
   contents: read
 
 on:
   push:
     paths:
-      - "apps/admin/**"
+      - "apps/goldshore-admin/**"
 
 jobs:
   deploy:
@@ -13,20 +13,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Node
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
-      - run: npm install
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Build Admin
-        run: |
-          cd apps/admin
-          npm run build
+        run: pnpm --filter apps-goldshore-admin build
 
       - name: Deploy Admin
-        working-directory: apps/admin
+        working-directory: apps/goldshore-admin
         run: npx wrangler pages deploy dist
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
