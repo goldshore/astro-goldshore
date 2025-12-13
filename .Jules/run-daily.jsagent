@@ -12,8 +12,12 @@ const { execSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
+// --- Configurable constants ---
+const MAX_BRANCH_AGE_DAYS = 90;
+const MAX_BRANCH_AGE_DAYS = 90;
 // --- Helpers ---
 
+// --- Helpers ---
 function sh(cmd, cwd = process.cwd()) {
   try {
     return execSync(cmd, { stdio: "pipe", cwd, maxBuffer: 1024 * 1024 * 10 }).toString("utf8").trim();
@@ -88,9 +92,9 @@ function prioritySort(branches) {
 
 function shouldSkip(branch) {
   const age = branchAgeDays(branch);
-  if (["main", "develop"].includes(branch)) return false;
+  return age > MAX_BRANCH_AGE_DAYS;
   if (branch.startsWith("release/")) return false;
-  return age > 90;
+  return age > MAX_BRANCH_AGE_DAYS;
 }
 
 function checkout(branch) {
@@ -102,16 +106,16 @@ function checkout(branch) {
 function checkWorkspaceIntegrity() {
   const findings = [];
   const root = process.cwd();
-
+     let dirEntries;
   function deepScan(dir) {
-     let entries;
+        dirEntries = fs.readdirSync(dir, { withFileTypes: true });
      try {
-        entries = fs.readdirSync(dir, { withFileTypes: true });
+        dirEntries = fs.readdirSync(dir, { withFileTypes: true });
      } catch (e) {
         return;
-     }
+     for (const ent of dirEntries) {
 
-     for (const ent of entries) {
+     for (const ent of dirEntries) {
          if (ent.name === "node_modules") continue;
          const fullPath = path.join(dir, ent.name);
          const relPath = path.relative(root, fullPath);
