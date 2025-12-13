@@ -44,7 +44,7 @@ export async function createFixBranchAndPR(
 
   await gh.rest.git.createRef({ owner, repo, ref: `refs/heads/${head}`, sha: baseSha });
 
-  const blobs = await Promise.all(changes.map(c => gh.rest.git.createBlob({ owner, repo, content: c.content, encoding: "utf-8" })));
+  const blobs = await Promise.all(changes.map(change => gh.rest.git.createBlob({ owner, repo, content: change.content, encoding: "utf-8" })));
   const tree = await gh.rest.git.createTree({
     owner, repo, base_tree: baseSha,
     tree: changes.map((change, index) => ({ path: change.path, mode: "100644", type: "blob", sha: blobs[index].data.sha }))
