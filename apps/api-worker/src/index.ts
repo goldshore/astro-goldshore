@@ -1,13 +1,33 @@
-import { Hono } from "hono";
-import health from "./routes/health";
-import user from "./routes/user";
-import system from "./routes/system";
+import { Hono } from 'hono'
+import users from './routes/users'
+import health from './routes/health'
+import ai from './routes/ai'
 
-const app = new Hono();
+type Env = {
+  API_KV: KVNamespace
+  DB: D1Database
+  ASSETS: R2Bucket
+  AI: any
+}
 
-// health
-import health from "./routes/health";
-app.route("/health", health);
+const app = new Hono<{ Bindings: Env }>()
+
+app.get('/', (c) => c.text('GoldShore API'))
+
+// Core routes
+app.route('/health', health)
+app.route('/ai', ai)
+app.route('/users', users)
+
+// V1 Routes
+const v1 = new Hono<{ Bindings: Env }>()
+
+v1.route('/users', users)
+v1.get('/agents', (c) => c.json({ agents: ['agent-alpha', 'agent-beta'] }))
+v1.get('/models', (c) => c.json({ models: ['gpt-4', 'claude-3'] }))
+v1.get('/logs', (c) => c.json({ logs: ['log1', 'log2'] }))
+
+app.route('/v1', v1)
 
 // user
 import user from "./routes/user";

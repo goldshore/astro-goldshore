@@ -189,40 +189,39 @@ gh pr view <id> \
 ```
 
 Flag PRs that touch:
-*   `package.json`, `pnpm-lock.yaml`
-*   `apps/admin/*`
-*   `apps/web/*`
-*   `apps/api-worker/*`, `apps/gateway/*`, `apps/control-worker/*`
-*   `tsconfig.json`, `astro.config.mjs`, `wrangler.toml`
-*   `shared packages/*` (`theme`, `ui`, `auth`, `utils`, etc.)
+- package.json, pnpm-lock.yaml
+- apps/admin/*
+- apps/web/*
+- apps/api-worker/*, apps/gateway/*, apps/control-worker/*
+- tsconfig.json, astro.config.mjs, wrangler.toml
+- shared packages/* (theme, ui, auth, utils, etc.)
 
 Those are high-impact and should be cleaned/merged before small copy changes.
 
----
+⸻
 
 ### 3.3 Decide Merge Order
 
-**Recommended priority:**
+Recommended priority:
+1. Infra / config PRs
+   - Root package.json
+   - tsconfig.json
+   - .github/workflows/*
+   - infra/cloudflare/*
+   - wrangler.toml changes
+2. Workers
+   - apps/api-worker
+   - apps/gateway
+   - apps/control-worker
+3. Web/Admin frameworks
+   - apps/web/astro.config.mjs, apps/admin/astro.config.mjs
+   - WebLayout, AdminLayout, NavBar, Footer
+4. Pages and content
+   - apps/web/src/pages/*
+   - apps/admin/src/pages/*
+5. Docs / README / comment-only PRs
 
-1.  **Infra / config PRs**
-    *   Root `package.json`
-    *   `tsconfig.json`
-    *   `.github/workflows/*`
-    *   `infra/cloudflare/*`
-    *   `wrangler.toml` changes
-2.  **Workers**
-    *   `apps/api-worker`
-    *   `apps/gateway`
-    *   `apps/control-worker`
-3.  **Web/Admin frameworks**
-    *   `apps/web/astro.config.mjs`, `apps/admin/astro.config.mjs`
-    *   WebLayout, AdminLayout, NavBar, Footer
-4.  **Pages and content**
-    *   `apps/web/src/pages/*`
-    *   `apps/admin/src/pages/*`
-5.  **Docs / README / comment-only PRs**
-
----
+⸻
 
 ## 4. Using Jules (Automation Layer)
 

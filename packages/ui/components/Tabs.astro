@@ -9,11 +9,15 @@ const { tabs = [] } = Astro.props;
     ))}
   </div>
 
-  {tabs.map((t) => (
-    <div id={t.id} class="gs-tab" style={tabs.indexOf(t) === 0 ? 'display: block;' : 'display: none;'}>
-      <slot name={t.id} />
-    </div>
-  ))}
+  <!--
+    Refactored to avoid dynamic slot names which are not supported in Astro.
+    Consumers should place content directly in the default slot,
+    or we can implement a specific content structure if needed in the future.
+    For now, we render the default slot.
+  -->
+  <div class="gs-tab-content">
+      <slot />
+  </div>
 </div>
 
 <script is:inline>
@@ -30,11 +34,6 @@ const { tabs = [] } = Astro.props;
             el.style.display = 'none';
         }
     });
-
-    // Optional: Update active state of buttons?
-    // The prompt didn't specify active state styles for buttons, but it's good UX.
-    // The prompt CSS has no active class for buttons.
-    // I will stick to just switching content.
   }
 </script>
 
