@@ -13,12 +13,12 @@ export async function listRepos(org: string) {
 
 export async function findOpenConflicts(owner: string, repo: string) {
   const prs = await gh.rest.pulls.list({ owner, repo, state: "open", per_page: 50 });
-  const withConflicts: any[] = [];
+  const conflictedPRs: any[] = [];
   for (const pr of prs.data) {
     const details = await gh.rest.pulls.get({ owner, repo, pull_number: pr.number });
-    if (details.data.mergeable_state === "dirty") withConflicts.push(pr);
+    if (details.data.mergeable_state === "dirty") conflictedPRs.push(pr);
   }
-  return withConflicts;
+  return conflictedPRs;
 }
 
 export async function openOpsIssue(owner: string, repo: string, title: string, body: string, labels: string[] = []) {
@@ -47,7 +47,7 @@ export async function createFixBranchAndPR(
   const blobs = await Promise.all(changes.map(c => gh.rest.git.createBlob({ owner, repo, content: c.content, encoding: "utf-8" })));
   const tree = await gh.rest.git.createTree({
     owner, repo, base_tree: baseSha,
-    tree: changes.map((c, i) => ({ path: c.path, mode: "100644", type: "blob", sha: blobs[i].data.sha }))
+    tree: changes.map((change, index) => ({ path: change.path, mode: "100644", type: "blob", sha: blobs[index].data.sha }))
   });
 
   const commit = await gh.rest.git.createCommit({
