@@ -14,9 +14,6 @@ let results = [];
   />
 
   <div id="results">
-    {results.map((r) => (
-      <a href={r.url}>{r.title}</a>
-    ))}
   </div>
 </div>
 
@@ -42,6 +39,11 @@ let results = [];
 
     try {
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query));
+      if (!res.ok) {
+        if (resultsDiv) resultsDiv.innerHTML = '';
+        console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
+        return;
+      }
       const results = await res.json();
 
       if (resultsDiv) {
@@ -50,6 +52,9 @@ let results = [];
         ).join('');
       }
     } catch (e) {
+      if (resultsDiv) {
+        resultsDiv.innerHTML = '<div class="search-error" style="color: red; margin-top: 0.5em;">Sorry, search failed. Please try again.</div>';
+      }
       console.error("Search failed", e);
     }
   }
