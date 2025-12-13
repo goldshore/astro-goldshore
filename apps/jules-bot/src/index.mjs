@@ -42,7 +42,7 @@ async function postComment(prNumber, body) {
 
   if (!res.ok) {
     const safePrNumber = String(prNumber).replace(/\r|\n/g, '');
-    console.error(`Failed to post comment to PR #${safePrNumber} ${res.status} ${await res.text()}`);
+    console.error(`Failed to post comment to PR #${safePrNumber}: ${res.status} ${res.statusText}: ${await res.text()}`);
   }
 }
 
@@ -65,7 +65,7 @@ async function dispatchPaletteAction(type, data) {
   });
 
   if (!res.ok) {
-    console.error('Failed to dispatch Palette Action', res.status, await res.text());
+    console.error(`Failed to dispatch Palette Action: ${res.status} ${await res.text()}`);
   }
 }
 
@@ -108,7 +108,7 @@ const server = http.createServer(async (req, res) => {
     let bodyTooLarge = false;
     req.on('data', chunk => {
       if (bodyTooLarge) return;
-      body += chunk.toString();
+      body += chunk.toString('utf8');
       if (body.length > MAX_BODY_SIZE) {
         bodyTooLarge = true;
         res.writeHead(413, { 'Content-Type': 'text/plain' });
@@ -125,7 +125,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200);
         res.end('OK');
       } catch (err) {
-        console.error(err);
+        console.error(`Error handling event "${eventName}":`, err);
         res.writeHead(500);
         res.end('Error');
       }
