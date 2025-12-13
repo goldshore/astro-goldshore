@@ -104,14 +104,14 @@ function checkWorkspaceIntegrity() {
   const root = process.cwd();
 
   function deepScan(dir) {
-     let entries;
+     let dirEntries;
      try {
-        entries = fs.readdirSync(dir, { withFileTypes: true });
+        dirEntries = fs.readdirSync(dir, { withFileTypes: true });
      } catch (e) {
         return;
      }
 
-     for (const ent of entries) {
+     for (const ent of dirEntries) {
          if (ent.name === "node_modules") continue;
          const fullPath = path.join(dir, ent.name);
          const relPath = path.relative(root, fullPath);
