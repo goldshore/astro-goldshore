@@ -1,0 +1,70 @@
+// .Jules/run-sentinel.jsagent
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+console.log('Running Jules Sentinel Checks...');
+
+const RULES = {
+  maxFiles: 20,
+  maxApps: 2,
+  highConflictFiles: [
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    'turbo.json',
+    'package.json',
+    'tsconfig.json',
+    'wrangler.toml',
+    'astro.config.mjs'
+  ]
+};
+
+// --- Check 1: Merge Markers ---
+console.log('1. Checking for merge markers...');
+try {
+  // grep returns 0 if match found (which means failure for us), 1 if no match (success)
+  // We exclude this file itself from grep to avoid false positives
+  // Also excluding .Jules/ directory as it contains scripts checking for these markers
+  // And ops/ directory as it contains documentation about markers
+  execSync('grep -r "<<<<<<<" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.Jules --exclude-dir=ops');
+  console.error('❌ Merge markers found! Please resolve conflicts before pushing.');
+  process.exit(1);
+} catch (e) {
+  // grep returns exit code 1 when no matches found, which is what we want
+  console.log('✅ No merge markers found.');
+}
+
+// --- Check 2: Lockfile Consistency ---
+// This is a basic check. If git status shows pnpm-lock.yaml as modified but not committed, or having conflict markers.
+// The grep check above catches conflict markers.
+// Here we might check if lockfile is missing (though pnpm install should fix that).
+if (!fs.existsSync('pnpm-lock.yaml')) {
+    console.error('❌ pnpm-lock.yaml is missing!');
+    process.exit(1);
+}
+console.log('✅ Lockfile present.');
+
+// --- Check 3: PR Scoping (Only runs if PR context is available via git diff) ---
+// We try to determine changed files against main
+try {
+    const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().trim().split('\n').filter(Boolean);
+
+    if (changedFiles.length > RULES.maxFiles) {
+        console.warn(`⚠️  PR Size Warning: ${changedFiles.length} files changed (Limit: ${RULES.maxFiles}). Consider splitting.`);
+    } else {
+        console.log(`✅ PR size ok (${changedFiles.length} files).`);
+    }
+
+    const highConflictTouched = changedFiles.filter(f =>
+        RULES.highConflictFiles.some(hcf => f.endsWith(hcf))
+    );
+
+    if (highConflictTouched.length > 0) {
+        console.warn(`⚠️  High-conflict files touched: ${highConflictTouched.join(', ')}. Please merge "infra PRs" quickly.`);
+    }
+
+} catch (e) {
+    console.log('ℹ️  Could not determine changed files (not in a git repo or no origin/main). Skipping scoping checks.');
+}
+
+console.log('Sentinel checks passed.');
