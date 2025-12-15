@@ -3,205 +3,285 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-console.log('Running Jules Sentinel Checks...');
+// --- Configuration ---
+const ARGS = process.argv.slice(2);
+const MODE = ARGS.includes('--mode=nightly') ? 'nightly' : 'pr';
+const REPORT_FILE = '.Jules/sentinel-report.json';
 
-const RULES = {
-  maxFiles: 20,
-  maxApps: 2,
-  highConflictFiles: [
-    'pnpm-lock.yaml',
-    'pnpm-workspace.yaml',
-    'turbo.json',
-    'package.json',
-    'tsconfig.json',
-    'wrangler.toml',
-    'astro.config.mjs'
-  ]
-};
-
-// --- Check 1: Merge Markers ---
-console.log('1. Checking for merge markers...');
-try {
-  // grep returns 0 if match found (which means failure for us), 1 if no match (success)
-  // We exclude this file itself from grep to avoid false positives
-  // Also excluding .Jules/ directory as it contains scripts checking for these markers
-  // And ops/ directory as it contains documentation about markers
-  execSync('grep -r "<<<<<<<" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.Jules --exclude-dir=ops');
-  console.error('❌ Merge markers found! Please resolve conflicts before pushing.');
-  process.exit(1);
-} catch (e) {
-  // grep returns exit code 1 when no matches found, which is what we want
-  console.log('✅ No merge markers found.');
-}
-
-// --- Check 2: Lockfile Consistency ---
-// This is a basic check. If git status shows pnpm-lock.yaml as modified but not committed, or having conflict markers.
-// The grep check above catches conflict markers.
-// Here we might check if lockfile is missing (though pnpm install should fix that).
-if (!fs.existsSync('pnpm-lock.yaml')) {
-    console.error('❌ pnpm-lock.yaml is missing!');
-    process.exit(1);
-}
-console.log('✅ Lockfile present.');
-
-// --- Check 3: PR Scoping (Only runs if PR context is available via git diff) ---
-// We try to determine changed files against main
-try {
-    const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().trim().split('\n').filter(Boolean);
-
-    if (changedFiles.length > RULES.maxFiles) {
-        console.warn(`⚠️  PR Size Warning: ${changedFiles.length} files changed (Limit: ${RULES.maxFiles}). Consider splitting.`);
-    } else {
-        console.log(`✅ PR size ok (${changedFiles.length} files).`);
-    }
-
-    const highConflictTouched = changedFiles.filter(f =>
-        RULES.highConflictFiles.some(hcf => f.endsWith(hcf))
-    );
-
-    if (highConflictTouched.length > 0) {
-        console.warn(`⚠️  High-conflict files touched: ${highConflictTouched.join(', ')}. Please merge "infra PRs" quickly.`);
-    }
-
-} catch (e) {
-    console.log('ℹ️  Could not determine changed files (not in a git repo or no origin/main). Skipping scoping checks.');
-}
-
-console.log('Sentinel checks passed.');
-// Configuration
 const CONFIG = {
-  ignoreDirs: ['node_modules', '.git', 'dist', '.turbo', '.astro'],
-  extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json'],
+    maxFiles: 20,
+    maxApps: 2,
+    highConflictFiles: [
+        'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'turbo.json',
+        'package.json', 'tsconfig.json', 'wrangler.toml', 'astro.config.mjs'
+    ],
+    ignoreDirs: ['node_modules', '.git', 'dist', '.turbo', '.astro', '.Jules', 'ops'],
+    extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json']
 };
 
-// Utilities
+console.log(`Starting Jules Sentinel in [${MODE}] mode...`);
+
+// --- Utilities ---
 function run(cmd, ignoreError = false) {
-  try {
-    return execSync(cmd, { stdio: 'pipe', encoding: 'utf-8' }).trim();
-  } catch (e) {
-    if (!ignoreError) console.error(`Failed: ${cmd}`, e.message);
-    return null;
-  }
+    try {
+        return execSync(cmd, { stdio: 'pipe', encoding: 'utf-8' }).trim();
+    } catch (e) {
+        if (!ignoreError) console.error(`Failed: ${cmd}`, e.message);
+        return null;
+    }
+}
+
+function getRemoteBranches() {
+    const raw = run('git branch -r', true);
+    if (!raw) return [];
+    return raw.split('\n')
+        .map(b => b.trim())
+        .filter(b => b && !b.includes('->') && !b.includes('origin/main') && b.startsWith('origin/'));
+}
+
+function getLatestShaForAction(actionName, tag) {
+    // Requires 'gh' CLI
+    try {
+        const cmd = `gh api repos/${actionName}/commits/${tag} -q .sha`;
+        return run(cmd, true);
+    } catch (e) { return null; }
 }
 
 function listFiles(dir) {
-  let results = [];
-  const list = fs.readdirSync(dir);
-  list.forEach(file => {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    if (stat && stat.isDirectory()) {
-      if (!CONFIG.ignoreDirs.includes(file)) {
-        results = results.concat(listFiles(filePath));
-      }
-    } else {
-      if (CONFIG.extensions.includes(path.extname(file))) {
-        results.push(filePath);
-      }
-    }
-  });
-  return results;
+    let results = [];
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+        if (stat && stat.isDirectory()) {
+            if (!CONFIG.ignoreDirs.includes(file)) results = results.concat(listFiles(filePath));
+        } else {
+            if (CONFIG.extensions.includes(path.extname(file))) results.push(filePath);
+        }
+    });
+    return results;
 }
 
-// Checks
-const CHECKS = {
-  unpinnedActions: {
-    name: "Unpinned GitHub Actions",
-    regex: /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g,
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.yml') && !filePath.endsWith('.yaml')) return [];
-      const matches = [];
-      let match;
-      while ((match = CHECKS.unpinnedActions.regex.exec(content)) !== null) {
-        matches.push({
-          line: content.substring(0, match.index).split('\n').length,
-          match: match[0],
-          action: match[1],
-          version: match[2]
+// --- Fix Logic ---
+
+function regenerateLockfile() {
+    console.log('Regenerating pnpm-lock.yaml...');
+    if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+    if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
+    try {
+        execSync('pnpm install', { stdio: 'inherit' });
+        return true;
+    } catch (e) {
+        console.error('Failed to regenerate lockfile.');
+        return false;
+    }
+}
+
+function fixUnpinnedActionsInFile(file) {
+    if (!fs.existsSync(file)) return false;
+    let content = fs.readFileSync(file, 'utf8');
+    let changed = false;
+    // Regex for uses: owner/repo@vX
+    const regex = /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g;
+
+    let match;
+    const replacements = [];
+    while ((match = regex.exec(content)) !== null) {
+        replacements.push({ full: match[0], action: match[1], tag: match[2] });
+    }
+
+    // Process replacements
+    for (const r of replacements) {
+        const sha = getLatestShaForAction(r.action, r.tag);
+        if (sha) {
+            const newStr = `uses: ${r.action}@${sha} # ${r.tag}`;
+            if (!content.includes(newStr)) { // Avoid double replace
+                 content = content.replace(r.full, newStr);
+                 changed = true;
+                 console.log(`Pinned ${r.action} (${r.tag}) -> ${sha.substring(0,7)} in ${path.basename(file)}`);
+            }
+        }
+    }
+
+    if (changed) {
+        fs.writeFileSync(file, content);
+        return true;
+    }
+    return false;
+}
+
+// --- Validation Checks ---
+
+function checkValidators(files) {
+    const report = {};
+    let failed = false;
+
+    files.forEach(file => {
+        const content = fs.readFileSync(file, 'utf-8');
+
+        // 1. Nested Lockfiles
+        if (path.basename(file) === 'pnpm-lock.yaml' && file !== 'pnpm-lock.yaml') {
+            report[file] = ["Nested pnpm-lock.yaml found."];
+            failed = true;
+        }
+        if (['package-lock.json', 'yarn.lock'].includes(path.basename(file))) {
+            report[file] = [`Forbidden lockfile: ${path.basename(file)}`];
+            failed = true;
+        }
+
+        // 2. Multiple Astro Blocks
+        if (file.endsWith('.astro')) {
+            const fenceCount = (content.match(/^---/gm) || []).length;
+            if (fenceCount > 2) {
+                report[file] = (report[file] || []).concat([`Found ${fenceCount} '---' fences. Expected <= 2.`]);
+                failed = true;
+            }
+        }
+    });
+
+    return { failed, report };
+}
+
+// --- Main Process ---
+
+async function processCurrentWorkspace(branchName, isNightly) {
+    const report = { branch: branchName || 'current', fixes: [], conflicts: [], hygiene: {} };
+    let hasChanges = false;
+
+    // 1. Rebase (Nightly only)
+    if (isNightly && branchName) {
+        const localBranch = branchName.replace('origin/', '');
+        try {
+            run(`git checkout ${localBranch} || git checkout -b ${localBranch} ${branchName}`);
+            run(`git fetch origin main`);
+            run(`git rebase origin/main`);
+        } catch (e) {
+            console.error(`Rebase failed for ${branchName}`);
+            run(`git rebase --abort`, true);
+            report.conflicts.push('Rebase failed');
+            return report; // Cannot proceed
+        }
+    }
+
+    // 2. PR Scoping (PR Mode only)
+    if (!isNightly) {
+        try {
+            const changedFiles = run('git diff --name-only origin/main...HEAD', true).split('\n').filter(Boolean);
+            if (changedFiles.length > CONFIG.maxFiles) {
+                console.warn(`⚠️ PR Size Warning: ${changedFiles.length} files changed.`);
+            }
+             const highConflictTouched = changedFiles.filter(f => CONFIG.highConflictFiles.some(hcf => f.endsWith(hcf)));
+             if (highConflictTouched.length > 0) {
+                 console.warn(`⚠️ High-conflict files touched: ${highConflictTouched.join(', ')}`);
+             }
+        } catch (e) {}
+    }
+
+    // 3. Fix: Lockfile Missing & Merge Markers
+    // Check missing lockfile
+    if (!fs.existsSync('pnpm-lock.yaml')) {
+         console.log('pnpm-lock.yaml missing. Generating...');
+         if (regenerateLockfile()) {
+             report.fixes.push('Generated pnpm-lock.yaml');
+             hasChanges = true;
+         }
+    }
+
+    // Check markers
+    try {
+        const grepCmd = `grep -l -r "<<<<<<<" . ` + CONFIG.ignoreDirs.map(d => `--exclude-dir=${d}`).join(' ');
+        const raw = run(grepCmd, true);
+        const markerFiles = (raw || '').split('\n').filter(Boolean);
+
+        if (markerFiles.length > 0) {
+            console.log('Conflict markers found:', markerFiles);
+            if (markerFiles.includes('pnpm-lock.yaml')) {
+                if (regenerateLockfile()) {
+                    report.fixes.push('Regenerated pnpm-lock.yaml');
+                    hasChanges = true;
+                    // Remove from markers list for reporting
+                    const idx = markerFiles.indexOf('pnpm-lock.yaml');
+                    markerFiles.splice(idx, 1);
+                }
+            }
+            markerFiles.forEach(f => report.conflicts.push(f));
+        }
+    } catch(e) {}
+
+    // 4. Fix: Unpinned Actions
+    const workflowDir = '.github/workflows';
+    if (fs.existsSync(workflowDir)) {
+        fs.readdirSync(workflowDir).forEach(f => {
+             if (f.endsWith('.yml') || f.endsWith('.yaml')) {
+                 if (fixUnpinnedActionsInFile(path.join(workflowDir, f))) {
+                     report.fixes.push(`Pinned actions in ${f}`);
+                     hasChanges = true;
+                 }
+             }
         });
-      }
-      return matches;
     }
-  },
-  multipleAstroBlocks: {
-    name: "Multiple Astro Component Definitions",
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.astro')) return [];
-      const fenceCount = (content.match(/^---/gm) || []).length;
-      if (fenceCount > 2) {
-          return [{ message: `Found ${fenceCount} '---' fences. Expected <= 2.` }];
-      }
-      return [];
-    }
-  },
-  missingEnvTypes: {
-    name: "Missing Env Types",
-    check: (content, filePath) => {
-      if (!filePath.endsWith('.ts') && !filePath.endsWith('.astro')) return [];
-      if (content.includes('Env') && !content.includes('interface Env') && !content.includes('import') && !content.includes('/// <reference')) {
-        return [];
-      }
-      return [];
-    }
-  },
-  nestedLockfiles: {
-    name: "Nested Lockfiles",
-    check: (content, filePath) => {
-        if (path.basename(filePath) === 'pnpm-lock.yaml' && filePath !== 'pnpm-lock.yaml') {
-            return [{ message: "Nested pnpm-lock.yaml found." }];
+
+    // 5. Validate Hygiene
+    const allFiles = listFiles('.');
+    const valResult = checkValidators(allFiles);
+    report.hygiene = valResult.report;
+
+    // 6. Commit & Push
+    if (hasChanges) {
+        console.log('Committing fixes...');
+        run(`git config user.name "Jules Sentinel"`);
+        run(`git config user.email "jules@goldshore.ai"`);
+        run(`git add .`);
+        run(`git commit -m "chore(sentinel): auto-fix conflicts and hygiene"`);
+        if (isNightly) {
+             const localBranch = branchName.replace('origin/', '');
+             run(`git push origin ${localBranch} --force-with-lease`);
+        } else {
+             try {
+                let currentBranch = run('git rev-parse --abbrev-ref HEAD');
+                // Handle detached HEAD if GITHUB_HEAD_REF is present (PR mode)
+                if (currentBranch === 'HEAD' && process.env.GITHUB_HEAD_REF) {
+                    currentBranch = process.env.GITHUB_HEAD_REF;
+                    console.log(`Pushing to ${currentBranch} (from detached HEAD)...`);
+                    run(`git push origin HEAD:refs/heads/${currentBranch}`);
+                } else if (currentBranch && currentBranch !== 'HEAD') {
+                    console.log(`Pushing to ${currentBranch}...`);
+                    run(`git push origin ${currentBranch}`);
+                } else {
+                    console.warn('Cannot determine branch to push to.');
+                }
+             } catch(e) { console.error('Could not push changes:', e.message); }
         }
-        if (path.basename(filePath) === 'package-lock.json' || path.basename(filePath) === 'yarn.lock') {
-            return [{ message: `Forbidden lockfile found: ${path.basename(filePath)}` }];
-        }
-        return [];
-    }
-  }
-};
-
-// Main
-async function main() {
-  console.log("Starting Sentinel (Repo Doctor)...");
-
-  const files = listFiles('.');
-  const report = {};
-  let fail = false;
-
-  for (const file of files) {
-    const content = fs.readFileSync(file, 'utf-8');
-
-    // Check Nested Lockfiles
-    const lockfileErrors = CHECKS.nestedLockfiles.check(content, file);
-    if (lockfileErrors.length > 0) {
-        report[file] = (report[file] || []).concat(lockfileErrors);
-        fail = true;
     }
 
-    // Unpinned Actions
-    const unpinned = CHECKS.unpinnedActions.check(content, file);
-    if (unpinned.length > 0) {
-        report[file] = (report[file] || []).concat(unpinned.map(u => ({ message: `Unpinned action: ${u.match}` })));
-    }
-
-    // Astro Blocks
-    const astro = CHECKS.multipleAstroBlocks.check(content, file);
-    if (astro.length > 0) {
-        report[file] = (report[file] || []).concat(astro);
-        fail = true;
-    }
-  }
-
-  // Output Report
-  if (Object.keys(report).length > 0) {
-    console.log("\n=== Sentinel Report ===");
-    for (const [file, issues] of Object.entries(report)) {
-      console.log(`\nFile: ${file}`);
-      issues.forEach(i => console.log(`  - ${i.message}`));
-    }
-
-    if (fail) process.exit(1);
-  } else {
-    console.log("No issues found.");
-  }
+    return report;
 }
 
-main().catch(console.error);
+// --- Entry Point ---
+
+(async () => {
+    const reportData = [];
+    if (MODE === 'nightly') {
+        const branches = getRemoteBranches();
+        for (const branch of branches) {
+            const res = await processCurrentWorkspace(branch, true);
+            reportData.push(res);
+        }
+    } else {
+        const res = await processCurrentWorkspace(null, false);
+        reportData.push(res);
+    }
+
+    fs.writeFileSync(REPORT_FILE, JSON.stringify(reportData, null, 2));
+    console.log(`Report written to ${REPORT_FILE}`);
+
+    // Exit code logic
+    // If PR mode and we have unresolved conflicts or hygiene failures, exit 1.
+    if (MODE === 'pr') {
+        const r = reportData[0];
+        if (r.conflicts.length > 0 || Object.keys(r.hygiene).length > 0) {
+            console.error('❌ Sentinel checks failed or conflicts require manual resolution.');
+            process.exit(1);
+        }
+    }
+})();
