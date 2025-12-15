@@ -120,13 +120,13 @@ importers:
         version: 4.11.0
     devDependencies:
       '@cloudflare/workers-types':
-        specifier: ^4
+        specifier: ^4.0.0
         version: 4.20251213.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
       wrangler:
-        specifier: ^3.101.0
+        specifier: ^3.0.0
         version: 3.114.15(@cloudflare/workers-types@4.20251213.0)
 
   apps/goldshore-agent:
@@ -2766,9 +2766,11 @@ packages:
 
   /color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+    requiresBuild: true
 
   /color-string@1.9.1:
     resolution: {integrity: sha512-shrVawQFojnZv6xM40anx4CkoDP+fZsw/ZerEMsW/pyzsRbElpsL/DBVW7q3ExxwusdNXI3lXpuhEZkzs8p5Eg==}
+    requiresBuild: true
     dependencies:
       color-name: 1.1.4
       simple-swizzle: 0.2.4
@@ -5089,6 +5091,7 @@ packages:
 
   /simple-swizzle@0.2.4:
     resolution: {integrity: sha512-nAu1WFPQSMNr2Zn9PGSZK9AGn4t/y97lEm+MXTtUDwfP0ksAIX4nO+6ruD9Jwut4C49SB1Ws+fbXsm/yScWOHw==}
+    requiresBuild: true
     dependencies:
       is-arrayish: 0.3.4
 

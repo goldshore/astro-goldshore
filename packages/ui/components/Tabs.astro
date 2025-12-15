@@ -5,7 +5,9 @@ const { tabs = [] } = Astro.props;
 <div class="gs-tabs">
   <div class="gs-tabs-header">
     {tabs.map((t) => (
-      <button onclick={`showTab(event, '${t.id}')`}>{t.label}</button>
+      <button class="gs-button gs-button--ghost gs-button--small" onclick={`showTab(event, '${t.id}')`}>
+        {t.label}
+      </button>
     ))}
   </div>
 
@@ -28,32 +30,15 @@ const { tabs = [] } = Astro.props;
     // Deactivate all content tabs in this container
     const contentTabs = container.querySelectorAll('.gs-tab');
     contentTabs.forEach((el) => {
-        if (el.id === id) {
-            el.style.display = 'block';
-        } else {
-            el.style.display = 'none';
-        }
+        el.classList.toggle('is-active', el.id === id);
     });
+
+    const buttons = container.querySelectorAll('.gs-tabs-header button');
+    buttons.forEach((btn) => btn.classList.toggle('active', btn === event.target));
   }
 </script>
-
 <style>
-  .gs-tabs-header {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .gs-tabs-header button {
-    background: var(--gs-bg-panel);
-    border: 1px solid var(--gs-border);
-    padding: 0.45rem 1rem;
-    border-radius: var(--gs-radius-md);
-    color: var(--gs-fg-muted);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .gs-tabs-header button:hover {
-      background: var(--gs-bg-elevated);
-      color: var(--gs-fg);
-  }
+  .gs-tab { display: none; }
+  .gs-tab.is-active { display: block; }
+  .gs-tabs-header button.active { background: var(--gs-accent-soft); color: var(--gs-accent-strong); }
 </style>

@@ -1,56 +1,331 @@
 #!/usr/bin/env node
 /**
- * SENTINEL bootstrapper
- * - surfaces the PR Doctor prompt
- * - provides a ready-to-use Jules API curl snippet when JULES_API_KEY is present
+ * .Jules/run-sentinel.jsagent
+ *
+ * Jules Sentinel - The Repository Guardian
+ *
+ * Modes:
+ *   --mode=pr    : (Default) Scans current HEAD for hygiene issues.
+ *   --mode=sweep : (Nightly) Iterates all remote branches, rebases on main, and applies mechanical fixes.
+ *   --fix        : Apply mechanical fixes where possible.
  */
 
-const fs = require('node:fs');
-const path = require('node:path');
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
 
-const repoRoot = process.cwd();
-const promptPath = path.join(repoRoot, 'AI', 'prompts', 'pr-doctor.md');
+// --- Configuration ---
+const ARGS = process.argv.slice(2);
+const MODE = ARGS.includes('--mode=sweep') ? 'SWEEP' : 'PR';
+const AUTO_FIX = ARGS.includes('--fix') || MODE === 'SWEEP';
 
-function readPrompt() {
-  if (!fs.existsSync(promptPath)) {
-    console.error(`Prompt not found at ${promptPath}`);
-    process.exit(1);
+const CONFIG = {
+  ignoreDirs: ['node_modules', '.git', 'dist', '.turbo', '.astro', '.Jules'],
+  extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json'],
+  highConflictFiles: [
+    'pnpm-lock.yaml',
+    'pnpm-workspace.yaml',
+    'turbo.json',
+    'package.json',
+    'tsconfig.json',
+    'wrangler.toml',
+    'astro.config.mjs'
+  ]
+};
+
+const REPORT_FILE = '.Jules/report.json';
+
+// --- Utilities ---
+function log(msg, type = 'info') {
+  const icon = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', action: '🔧' }[type] || '';
+  console.log(`${icon}  ${msg}`);
+}
+
+function run(cmd, ignoreError = false) {
+  try {
+    return execSync(cmd, { stdio: 'pipe', encoding: 'utf-8' }).trim();
+  } catch (e) {
+    if (!ignoreError) console.error(`Failed: ${cmd}`, e.message);
+    throw e;
   }
-  return fs.readFileSync(promptPath, 'utf8');
 }
 
-function printHeader(title) {
-  console.log(`\n=== ${title} ===`);
+function git(args, ignoreError = false) {
+    try {
+        return execSync(`git ${args}`, { stdio: 'pipe', encoding: 'utf-8' }).trim();
+    } catch (e) {
+        if (!ignoreError) throw e;
+        return null;
+    }
 }
 
-function emitCurlExample() {
-  const apiKey = process.env.JULES_API_KEY || '';
-  const branch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || '';
+// --- Fixers ---
 
-  if (!apiKey) {
-    console.log('JULES_API_KEY not provided; printing prompt for manual use.');
-    return;
-  }
+function getLatestShaForAction(actionRef, tag) {
+    try {
+        // actionRef like "actions/checkout"
+        // tag like "v3"
+        const remote = `https://github.com/${actionRef}`;
+        const lsRemote = git(`ls-remote ${remote} ${tag} refs/tags/${tag}*`, true);
+        if (!lsRemote) return null;
 
-  const sessionName = branch ? `SENTINEL-${branch}` : 'SENTINEL-ad-hoc';
-  const payload = {
-    displayName: sessionName,
-    prompt: readPrompt(),
-  };
-
-  console.log('Curl example (replace <repo> path if needed):');
-  console.log(
-    `curl -X POST https://jules.googleapis.com/v1alpha/sessions \\\n  -H "X-Goog-Api-Key: ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(payload)}'`
-  );
+        // Take the first match's SHA
+        const sha = lsRemote.split('\t')[0];
+        return sha;
+    } catch (e) {
+        return null;
+    }
 }
 
-function main() {
-  printHeader('SENTINEL prompt');
-  console.log(readPrompt());
-  printHeader('Usage');
-  console.log('- Run from CI on pull_request or nightly to surface diagnostics.');
-  console.log('- The prompt below is designed for safe, mechanical fixes.');
-  emitCurlExample();
+function fixUnpinnedActions(filePath, content) {
+    let newContent = content;
+    let modified = false;
+    const regex = /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g;
+
+    let match;
+    // We need to re-run regex or replace carefully.
+    // Simplest is generic replace with callback if node supports it (it does).
+
+    newContent = newContent.replace(regex, (fullMatch, action, tag) => {
+        log(`Found unpinned action: ${action}@${tag}`, 'info');
+        const sha = getLatestShaForAction(action, tag);
+        if (sha) {
+            log(`Pinning ${action} to ${sha}`, 'action');
+            modified = true;
+            return `uses: ${action}@${sha} # ${tag}`;
+        } else {
+            log(`Could not fetch SHA for ${action}@${tag}`, 'warning');
+            return fullMatch;
+        }
+    });
+
+    if (modified) {
+        fs.writeFileSync(filePath, newContent);
+    }
+    return modified;
 }
 
-main();
+function regenerateLockfile() {
+    log('Regenerating pnpm-lock.yaml...', 'action');
+    try {
+        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+        if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
+
+        // Run install
+        execSync('pnpm install', { stdio: 'inherit' });
+        return true;
+    } catch (e) {
+        log('Failed to regenerate lockfile', 'error');
+        return false;
+    }
+}
+
+// --- Checks ---
+
+const CHECKS = {
+    nestedLockfiles: (file, content) => {
+        // Resolve paths to compare correctly against root lockfile
+        const absFile = path.resolve(file);
+        const absRoot = path.resolve('pnpm-lock.yaml');
+
+        if (path.basename(file) === 'pnpm-lock.yaml' && absFile !== absRoot) return ["Nested pnpm-lock.yaml found"];
+        if (['package-lock.json', 'yarn.lock'].includes(path.basename(file))) return [`Forbidden lockfile: ${path.basename(file)}`];
+        return [];
+    },
+    unpinnedActions: (file, content) => {
+        if (!file.endsWith('.yml') && !file.endsWith('.yaml')) return [];
+        if (content.match(/uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/)) {
+            return ["Unpinned GitHub Actions found"];
+        }
+        return [];
+    },
+    mergeMarkers: (file, content) => {
+        // Split strings to avoid self-detection
+        const START = '<<<<' + '<<<';
+        const MID = '====' + '===';
+        if (content.includes(START) && content.includes(MID)) return ["Merge markers found"];
+        return [];
+    }
+};
+
+function scanAndFix(dir = '.') {
+    const report = {};
+    const files = run(`find ${dir} -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*" -not -path "*/.Jules/*" -not -path "*/ops/*"`).split('\n').filter(Boolean);
+    let fixedCount = 0;
+
+    for (const file of files) {
+        // Skip binary files or large files check if needed
+        if (file.endsWith('.png') || file.endsWith('.jpg')) continue;
+
+        let content = '';
+        try { content = fs.readFileSync(file, 'utf-8'); } catch (e) { continue; }
+
+        const issues = [];
+
+        // Check Markers
+        const markerIssues = CHECKS.mergeMarkers(file, content);
+        if (markerIssues.length > 0) {
+            issues.push(...markerIssues);
+            // We can't auto-fix markers easily without context, Sentinel reports them.
+            // Lockfile is special case handled separately.
+        }
+
+        // Check/Fix Actions
+        if (CHECKS.unpinnedActions(file, content).length > 0) {
+            if (AUTO_FIX) {
+                if (fixUnpinnedActions(file, content)) {
+                    log(`Fixed unpinned actions in ${file}`, 'success');
+                    fixedCount++;
+                }
+            } else {
+                issues.push("Unpinned GitHub Actions");
+            }
+        }
+
+        // Check Nested Lockfiles
+        const lockIssues = CHECKS.nestedLockfiles(file, content);
+        if (lockIssues.length > 0) {
+            issues.push(...lockIssues);
+            // Auto-delete forbidden nested lockfiles?
+            if (AUTO_FIX) {
+                fs.unlinkSync(file);
+                log(`Deleted forbidden file: ${file}`, 'action');
+                fixedCount++;
+            }
+        }
+
+        if (issues.length > 0 && !AUTO_FIX) { // If fixed, don't report
+            report[file] = issues;
+        }
+    }
+
+    return { report, fixedCount };
+}
+
+// --- Workflows ---
+
+async function runPRCheck() {
+    log('Running PR Check...');
+
+    // 1. Lockfile Check
+    if (!fs.existsSync('pnpm-lock.yaml')) {
+        log('pnpm-lock.yaml is missing', 'error');
+        if (AUTO_FIX) {
+            regenerateLockfile();
+        } else {
+            process.exit(1);
+        }
+    }
+
+    // 2. Scan & Fix
+    const { report } = scanAndFix('.');
+
+    // 3. PR Scoping (Git Diff)
+    try {
+        const changed = git('diff --name-only origin/main...HEAD', true);
+        if (changed) {
+            const files = changed.split('\n').filter(Boolean);
+            if (files.length > 20) log(`PR too large: ${files.length} files`, 'warning');
+
+            const highConflict = files.filter(f => CONFIG.highConflictFiles.some(h => f.endsWith(h)));
+            if (highConflict.length > 0) log(`Touched high-conflict files: ${highConflict.join(', ')}`, 'warning');
+        }
+    } catch (e) {
+        log('Skipping scope checks (no git context)', 'info');
+    }
+
+    // Output
+    if (Object.keys(report).length > 0) {
+        log('Issues found:', 'error');
+        console.log(JSON.stringify(report, null, 2));
+        process.exit(1);
+    } else {
+        log('All checks passed.', 'success');
+    }
+}
+
+async function runSweep() {
+    log('Running Global Sweep...', 'action');
+
+    // 1. Fetch
+    git('fetch --all');
+
+    // 2. List Branches
+    const branches = git('branch -r').split('\n')
+        .map(b => b.trim().replace('origin/', ''))
+        .filter(b => b !== 'main' && b !== 'HEAD' && !b.includes('->'));
+
+    const summary = { fixed: [], needsCodex: [], failed: [] };
+
+    for (const branch of branches) {
+        log(`Processing branch: ${branch}...`);
+
+        try {
+            git(`checkout ${branch}`);
+
+            // Rebase
+            try {
+                git(`rebase origin/main`);
+                log(`  Rebased on main`, 'success');
+            } catch (e) {
+                log(`  Rebase conflict on ${branch}`, 'warning');
+                git('rebase --abort'); // Abort first to verify state
+
+                // Try to resolve if it's just lockfile?
+                // To do that, we'd need to resolving merge conflict... skipping for now.
+                // If rebase fails, we mark for Codex.
+                summary.needsCodex.push({ branch, reason: 'Rebase Conflict' });
+
+                // Reset and continue
+                git(`checkout .`);
+                continue;
+            }
+
+            // Scan & Fix
+            const { fixedCount } = scanAndFix('.');
+
+            // Check for lockfile conflict logic
+            if (fs.existsSync('pnpm-lock.yaml')) {
+                const content = fs.readFileSync('pnpm-lock.yaml', 'utf-8');
+                if (content.includes('<<<<<<<')) {
+                    regenerateLockfile();
+                    fixedCount++;
+                }
+            }
+
+            // Commit & Push if changed
+            const status = git('status --porcelain');
+            if (status) {
+                git('add .');
+                git('commit -m "chore: Sentinel auto-fix (lockfiles, actions)"');
+                git(`push origin ${branch} --force-with-lease`);
+                log(`  Pushed fixes to ${branch}`, 'success');
+                summary.fixed.push(branch);
+            }
+
+        } catch (e) {
+            log(`  Failed to process ${branch}: ${e.message}`, 'error');
+            summary.failed.push({ branch, error: e.message });
+            try { git('rebase --abort'); } catch (_) {}
+            try { git('checkout .'); } catch (_) {}
+        }
+    }
+
+    // Write Report
+    fs.writeFileSync(REPORT_FILE, JSON.stringify(summary, null, 2));
+    log(`Sweep complete. Report saved to ${REPORT_FILE}`, 'success');
+}
+
+// --- Entry Point ---
+(async () => {
+    try {
+        if (MODE === 'SWEEP') {
+            await runSweep();
+        } else {
+            await runPRCheck();
+        }
+    } catch (e) {
+        console.error(e);
+        process.exit(1);
+    }
+})();
