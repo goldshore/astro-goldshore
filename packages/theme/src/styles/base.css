@@ -1,3 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap');
+
+:root {
+  font-family: var(--gs-font-sans);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--gs-bg);
+  color: var(--gs-text);
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--gs-link);
+  text-decoration: none;
+  transition: color var(--gs-transition-fast);
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--gs-link-hover);
+}
+
+p {
+  margin: 0 0 var(--gs-space-4);
+  color: var(--gs-text-subtle);
+  font-size: 1rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 var(--gs-space-4);
+  font-family: var(--gs-font-display);
+  color: var(--gs-text);
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 2vw + 1.4rem, 2.8rem);
+  line-height: 1.15;
+}
+
+h2 {
+  font-size: clamp(1.8rem, 1vw + 1.2rem, 2.2rem);
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+ul,
+ol {
+  padding-left: var(--gs-space-6);
+  margin: 0 0 var(--gs-space-4);
+  color: var(--gs-text-subtle);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius-sm);
+  padding: var(--gs-space-2) var(--gs-space-3);
+  transition: border-color var(--gs-transition-fast),
+    box-shadow var(--gs-transition-fast),
+    background-color var(--gs-transition-fast);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--gs-focus-ring);
+}
+
+button {
+  cursor: pointer;
+  background: var(--gs-accent);
+  color: var(--gs-accent-contrast);
+  border: none;
+  padding: var(--gs-space-2) var(--gs-space-4);
+  border-radius: var(--gs-radius-md);
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--gs-accent-strong);
+}
+
+input,
+select,
+textarea {
+  background: var(--gs-panel);
+  color: var(--gs-text);
+}
+
+code {
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  background: var(--gs-panel-muted);
+  color: var(--gs-text);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--gs-radius-sm);
+  border: 1px solid var(--gs-border);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--gs-border);
+  margin: var(--gs-space-6) 0;
+}
 @import './tokens.css';
 
 * { box-sizing: border-box; }
