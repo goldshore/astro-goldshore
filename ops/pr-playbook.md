@@ -229,7 +229,7 @@ As Jules evolves into a hybrid GitHub App + Actions bot, the idea is:
 - Let Jules handle:
   - Lockfile regeneration
   - Resetting branches against main
-  - Deleting dead directories (apps/goldshore-agent, old prototypes, etc.)
+  - Deleting dead directories (apps/gs-agent, old prototypes, etc.)
   - Re-running CI after fixes
 - Let you handle:
   - Semantic decisions in conflicted source files
