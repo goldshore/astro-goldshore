@@ -1,0 +1,53 @@
+---
+import { GSButton } from '@goldshore/ui';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+export const prerender = true;
+
+const services = [
+  {
+    name: 'Operations Control',
+    detail: 'Observability dashboards, incident automation, and policy-driven safeguards.',
+    cta: '/contact'
+  },
+  {
+    name: 'AI Execution',
+    detail: 'Signal ingestion, strategy deployment, and guardrailed automation for trading.',
+    cta: '/contact'
+  },
+  {
+    name: 'Edge Intelligence',
+    detail: 'Low-latency inference and routing tuned for reliability across regions.',
+    cta: '/contact'
+  }
+];
+---
+<BaseLayout title="Services | GoldShore" description="Service catalog for GoldShore AI">
+  <section class="gs-hero">
+    <div>
+      <h1>Services</h1>
+      <p>Crafted delivery engagements that combine platform engineering, AI execution, and operational rigor.</p>
+      <GSButton href="/contact">Request a scoping call</GSButton>
+    </div>
+    <div class="gs-card">
+      <h3 class="section-title"><span>☍</span>Engagement highlights</h3>
+      <ul>
+        <li>Architecture assessments with action plans</li>
+        <li>Deployment of shared observability foundations</li>
+        <li>Security reviews with access and automation policy updates</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="gs-section">
+    <div class="gs-grid columns-3">
+      {services.map((service) => (
+        <article class="gs-card">
+          <h3>{service.name}</h3>
+          <p>{service.detail}</p>
+          <GSButton href={service.cta} variant="secondary" class="gs-button--small">Talk to us</GSButton>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,16 +1,22 @@
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
 body {
   margin: 0;
-  font-family: var(--gs-font);
+  font-family: var(--gs-font-sans);
   background: var(--gs-bg);
-  color: var(--gs-fg);
+  color: var(--gs-text);
 }
+
 a {
   color: inherit;
   text-decoration: none;
 }
+
 button, input, select {
   font-family: inherit;
 }
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; }
