@@ -9,6 +9,7 @@
     "modes/*.css",
     "src/**/*.css",
     "src/*.js",
+    "src/styles/*.css",
     "src/*.ts",
     "assets/*"
   ],

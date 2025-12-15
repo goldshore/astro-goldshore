@@ -1,7 +1,5 @@
-@import './tokens.css';
 @import './reset.css';
+@import './src/styles/tokens.css';
 @import './src/styles/base.css';
-
-html {
-  min-height: 100%;
-}
+@import './src/styles/components.css';
+@import './src/styles/layout.css';

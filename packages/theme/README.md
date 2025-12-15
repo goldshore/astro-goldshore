@@ -6,7 +6,7 @@ This package contains the design tokens, baseline styles, and shared assets for 
 
 Import the theme in your application entry point to register tokens, resets, and base typography:
 
-```css
+```astro
 import '@goldshore/theme';
 ```
 

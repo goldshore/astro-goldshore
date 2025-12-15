@@ -17,3 +17,6 @@ a {
 button, input, select {
   font-family: inherit;
 }
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; }
