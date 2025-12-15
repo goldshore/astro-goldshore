@@ -1,3 +1,5 @@
-# Palette's Journal - UX & A11y Learnings
+# Palette's Journal
 
-This journal tracks critical accessibility and UX insights specific to the GoldShore design system.
+## 2025-12-14 - Polymorphic Button Accessibility
+**Learning:** Found usage of `<a>` tags with `href="#"` for button-like actions in Admin UI, which breaks accessibility and semantics (no native `disabled` support).
+**Action:** Refactored `GSButton` to be polymorphic (renders `<button>` when no `href`), enabling native `disabled` state and keyboard interaction.
