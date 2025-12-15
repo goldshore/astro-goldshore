@@ -7,11 +7,18 @@
   "files": [
     "*.css",
     "modes/*.css",
-    "src/*.ts"
+    "src/**/*.css",
+    "src/*.js",
+    "src/*.ts",
+    "assets/*"
   ],
   "exports": {
     ".": "./index.css",
     "./tokens": "./tokens.css",
+    "./base": "./src/styles/base.css",
+    "./styles/tokens": "./src/styles/tokens.css",
+    "./reset": "./reset.css",
+    "./assets": "./src/assets.js",
     "./layout": "./layout.css",
     "./components": "./components.css",
     "./manager": "./src/theme-manager.ts"
