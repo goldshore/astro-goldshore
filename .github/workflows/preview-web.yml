@@ -23,7 +23,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          run_install: false
 
       - uses: actions/setup-node@v4
         with:
@@ -45,6 +45,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: astro-gs-web
+          projectName: preview-web
           directory: apps/web/dist
           branch: ${{ github.head_ref || github.ref_name }}

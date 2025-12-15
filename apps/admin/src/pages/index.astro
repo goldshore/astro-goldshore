@@ -1,5 +1,5 @@
 ---
-import AdminLayout from '../layouts/AdminLayout.astro';
+import AdminLayout from "../layouts/AdminLayout.astro";
 ---
 
 <AdminLayout title="System Overview">
@@ -261,6 +261,14 @@ import AdminLayout from '../layouts/AdminLayout.astro';
 			}
 		}
 	</style>
+<AdminLayout title="Dashboard">
+  <h1>Admin Dashboard</h1>
+
+  <ul>
+    <li><a href="/logs">System Logs</a></li>
+    <li><a href="/users">User Management</a></li>
+    <li><a href="/config">System Configuration</a></li>
+  </ul>
 </AdminLayout>
 import StatCard from '../components/StatCard.astro';
 

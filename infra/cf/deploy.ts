@@ -100,4 +100,26 @@ async function main() {
   for (const w of workers) await deployWorker(w);
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+// Redact sensitive environment values from error messages before logging
+function redactSensitive(err: unknown): string {
+  // List of sensitive env values to redact if present
+  const SENSITIVE = [
+    process.env.CF_API_TOKEN,
+    process.env.CF_ACCOUNT_ID,
+    process.env.CF_ZONE_ID,
+  ].filter(Boolean) as string[]; // remove undefined/null
+  let str = (err instanceof Error) ? (err.stack || err.message) : String(err);
+  for (const value of SENSITIVE) {
+    if (typeof value === "string" && value.length > 4) {
+      // Replace all occurrences with "[REDACTED]"
+      const regex = new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), "g");
+      str = str.replace(regex, "[REDACTED]");
+    }
+  }
+  return str;
+}
+
+main().catch(e => { 
+  console.error(redactSensitive(e)); 
+  process.exit(1); 
+});
