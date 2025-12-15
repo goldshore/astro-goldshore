@@ -12,17 +12,18 @@ routes = [
 ENV = "production"
 
 [[kv_namespaces]]
-binding = "gs-kv"
+binding = "CONTROL_LOGS"
 id = "gs_api_kv_prod_001"
 
-[[d1_databases]]
-binding = "gs-db"
-database_name = "gs-db"
-database_id = "gs_database_id_001"
-
 [[r2_buckets]]
-binding = "gs-assets"
+binding = "STATE"
 bucket_name = "gs-assets"
+
+[[services]]
+binding = "API"
+service = "gs-api"
+environment = "production"
+
 [[services]]
 binding = "GATEWAY"
 service = "gs-gateway"
