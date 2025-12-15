@@ -1,0 +1,40 @@
+// .Jules/run-codex.jsagent
+const fs = require('fs');
+const path = require('path');
+
+console.log('Running Codex Agent (Complex Conflict Resolution)...');
+
+const ARGS = process.argv.slice(2);
+const help = ARGS.includes('--help') || ARGS.includes('-h');
+
+if (help) {
+    console.log(`
+Usage: node .Jules/run-codex.jsagent [options]
+
+Options:
+  --file <path>    Specific file to resolve
+  --branch <name>  Branch to operate on
+  --dry-run        Simulate resolution without changes
+  --help           Show this help message
+
+Description:
+  Codex handles complex semantic conflicts that Sentinel cannot resolve mechanically.
+  It uses AST analysis and LLM-based logic to merge divergent code paths.
+`);
+    process.exit(0);
+}
+
+// Placeholder for future logic
+console.log('ℹ️  Codex is currently in passive mode. No complex resolution logic implemented yet.');
+console.log('    To activate, implement AST parsing and LLM integration.');
+
+// If called by Sentinel, we might want to log the request
+const reportPath = path.join('.Jules', 'codex-report.json');
+const request = {
+    timestamp: new Date().toISOString(),
+    args: ARGS,
+    status: 'skipped'
+};
+
+fs.writeFileSync(reportPath, JSON.stringify(request, null, 2));
+console.log(`Report written to ${reportPath}`);
