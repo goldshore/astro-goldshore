@@ -4,10 +4,16 @@
   "private": true,
   "type": "module",
   "main": "index.css",
-  "files": ["*.css"],
+  "files": [
+    "*.css",
+    "modes/*.css",
+    "src/*.ts"
+  ],
   "exports": {
     ".": "./index.css",
     "./tokens": "./tokens.css",
-    "./reset": "./reset.css"
+    "./layout": "./layout.css",
+    "./components": "./components.css",
+    "./manager": "./src/theme-manager.ts"
   }
 }
