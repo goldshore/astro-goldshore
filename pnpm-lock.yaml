@@ -65,10 +65,10 @@ importers:
         specifier: latest
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       '@goldshore/theme':
-        specifier: workspace:*
+        specifier: file:../../packages/theme
         version: link:../../packages/theme
       '@goldshore/ui':
-        specifier: workspace:*
+        specifier: file:../../packages/ui
         version: link:../../packages/ui
       astro:
         specifier: ^5.15.9
@@ -113,7 +113,7 @@ importers:
   apps/gateway:
     dependencies:
       '@goldshore/auth':
-        specifier: workspace:*
+        specifier: file:../../packages/auth
         version: link:../../packages/auth
       hono:
         specifier: ^4.0.0
@@ -149,10 +149,10 @@ importers:
         specifier: latest
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       '@goldshore/theme':
-        specifier: workspace:*
+        specifier: file:../../packages/theme
         version: link:../../packages/theme
       '@goldshore/ui':
-        specifier: workspace:*
+        specifier: file:../../packages/ui
         version: link:../../packages/ui
       astro:
         specifier: ^5.15.9
