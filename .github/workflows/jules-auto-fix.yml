@@ -33,7 +33,7 @@ jobs:
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Checkout branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
         with:
           ref: ${{ steps.pr_data.outputs.branch_name }}
           fetch-depth: 0
@@ -130,7 +130,7 @@ jobs:
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
       - name: Checkout branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
         with:
           ref: ${{ steps.pr_data.outputs.branch_name }}
           fetch-depth: 0
