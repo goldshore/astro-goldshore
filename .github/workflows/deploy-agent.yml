@@ -9,7 +9,9 @@ on:
       - main
     paths:
       - "apps/gs-agent/**"
+      - "apps/goldshore-agent/**"
       - "infra/cloudflare/gs-agent.wrangler.toml"
+      - "infra/cloudflare/goldshore-agent.wrangler.toml"
       - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
