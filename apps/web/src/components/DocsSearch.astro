@@ -31,14 +31,23 @@ let results = [];
     };
   }
 
+  let searchController;
+
   async function runSearch(query) {
+    // Abort previous request if it exists
+    if (searchController) {
+      searchController.abort();
+    }
+    searchController = new AbortController();
+    const signal = searchController.signal;
+
     if (!query.trim()) {
       if(resultsDiv) resultsDiv.innerHTML = '';
       return;
     }
 
     try {
-      const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query));
+      const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query), { signal });
       if (!res.ok) {
         if (resultsDiv) resultsDiv.innerHTML = '';
         console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
@@ -52,6 +61,7 @@ let results = [];
         ).join('');
       }
     } catch (e) {
+      if (e.name === 'AbortError') return; // Ignore aborted requests
       if (resultsDiv) {
         resultsDiv.innerHTML = '<div class="search-error" style="color: red; margin-top: 0.5em;">Sorry, search failed. Please try again.</div>';
       }
