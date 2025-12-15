@@ -13,6 +13,17 @@ jobs:
   sentinel-nightly:
     name: Nightly SENTINEL scan
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -22,9 +33,26 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
+
+      - name: Run Sentinel Sweep
+        run: |
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          node ./.Jules/run-sentinel.jsagent --mode=sweep
+
+      - name: Run Codex
+        run: node ./.Jules/run-codex.jsagent
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .Jules/report.json
       - name: Run SENTINEL (Nightly Mode)
         run: node ./.Jules/run-sentinel.jsagent --mode=nightly
       - name: Upload Sentinel Report
