@@ -1,22 +1,66 @@
-name: Sentinel (Nightly)
+name: SENTINEL (Nightly)
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Midnight UTC
+    - cron: "30 3 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
-  issues: write
+  pull-requests: write
 
 jobs:
   sentinel-nightly:
+    name: Nightly SENTINEL scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: node .Jules/run-sentinel.jsagent
+
+      - name: Run Sentinel Sweep
+        run: |
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          node ./.Jules/run-sentinel.jsagent --mode=sweep
+
+      - name: Run Codex
+        run: node ./.Jules/run-codex.jsagent
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .Jules/report.json
+      - name: Run SENTINEL (Nightly Mode)
+        run: node ./.Jules/run-sentinel.jsagent --mode=nightly
+      - name: Upload Sentinel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report-nightly
+          path: .Jules/sentinel-report.json

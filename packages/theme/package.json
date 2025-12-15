@@ -6,14 +6,18 @@
   "main": "index.css",
   "files": [
     "*.css",
-    "modes/*.css",
-    "src/*.ts"
+    "src/styles/*.css",
+    "src/*.ts",
+    "assets/*"
   ],
   "exports": {
     ".": "./index.css",
-    "./tokens": "./tokens.css",
-    "./layout": "./layout.css",
-    "./components": "./components.css",
-    "./manager": "./src/theme-manager.ts"
+    "./tokens": "./src/styles/tokens.css",
+    "./styles/tokens": "./src/styles/tokens.css",
+    "./styles/base": "./src/styles/base.css",
+    "./styles/components": "./src/styles/components.css",
+    "./styles/layout": "./src/styles/layout.css",
+    "./manager": "./src/theme-manager.ts",
+    "./assets/logo.svg": "./assets/logo.svg"
   }
 }
