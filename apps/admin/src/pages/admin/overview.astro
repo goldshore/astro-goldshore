@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import GSButton from '@packages/ui/GSButton.astro';
+import { GSButton } from '@goldshore/ui';
 
 // Initial UI state
 const initialStatus = { worker: 'Unknown', lastSync: 'N/A' };
@@ -16,7 +16,7 @@ const initialStatus = { worker: 'Unknown', lastSync: 'N/A' };
                 <h2 class="text-xl font-semibold">gs-api Status</h2>
                 <p id="api-status" class="text-2xl font-bold" style="color: var(--gs-brand-blue);">{initialStatus.worker}</p>
                 <p class="text-sm" style="color: var(--gs-text-secondary);">Last checked: <span id="last-sync">{initialStatus.lastSync}</span></p>
-                <GSButton href="#" variant="secondary" id="check-api">Check Health</GSButton>
+                <GSButton variant="secondary" id="check-api">Check Health</GSButton>
             </div>
 
             <div class="gs-card space-y-3">
@@ -30,7 +30,7 @@ const initialStatus = { worker: 'Unknown', lastSync: 'N/A' };
                 <h2 class="text-xl font-semibold">Git Conflicts</h2>
                 <p id="conflict-count" class="text-2xl font-bold text-red-500">7 Open</p>
                 <p class="text-sm" style="color: var(--gs-text-secondary);">Requires immediate SOP-001 execution.</p>
-                <GSButton href="#" variant="primary" id="run-sop">Execute Git Repair</GSButton>
+                <GSButton variant="primary" id="run-sop">Execute Git Repair</GSButton>
             </div>
         </div>
 
@@ -39,8 +39,8 @@ const initialStatus = { worker: 'Unknown', lastSync: 'N/A' };
             <h2 class="text-2xl font-semibold">Deployment Actions</h2>
             <p class="text-sm" style="color: var(--gs-text-secondary);">Initiate a controlled preview deployment or production rollback (UI only; backend triggers to be wired later).</p>
             <div class="flex space-x-4">
-                <GSButton href="#" variant="primary" id="preview-deploy">Run Preview Deploy</GSButton>
-                <GSButton href="#" variant="secondary" id="prod-rollback" class="opacity-50 cursor-not-allowed">Production Rollback</GSButton>
+                <GSButton variant="primary" id="preview-deploy">Run Preview Deploy</GSButton>
+                <GSButton variant="secondary" id="prod-rollback" disabled>Production Rollback</GSButton>
             </div>
         </div>
     </div>
