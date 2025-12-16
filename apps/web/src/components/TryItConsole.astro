@@ -1,39 +1,187 @@
 ---
+import { GSButton } from '@goldshore/ui';
+
+interface Props {
+  method: string;
+  path: string;
+  openapi?: any;
+}
+
 const { method, path, openapi } = Astro.props;
+
+// Generate a unique ID for this instance to support multiple consoles on one page
+const instanceId = Math.random().toString(36).substring(2, 11);
+const consoleId = `console-${instanceId}`;
 
 const base = import.meta.env.PUBLIC_API || '';
 const url = base + path;
-
-let body = '';
-let response = null;
-
-async function send() {
-  response = await fetch(url, {
-    method: method.toUpperCase(),
-    headers: { 'Content-Type': 'application/json' },
-    body: body || undefined
-  }).then(r => r.json()).catch(e => ({ error: e.message }));
-}
 ---
 
-<div class="try-box">
+<div class="try-box" id={consoleId}>
   <h4>Request</h4>
-  <textarea oninput="body=this.value">{body}</textarea>
+  <div class="input-wrapper">
+    <textarea
+      aria-label="Request body"
+      placeholder={method === 'get' ? 'No body required for GET requests' : 'Enter JSON body...'}
+    ></textarea>
+  </div>
 
-  <button onclick="send()">Send</button>
+  <div class="actions">
+    <GSButton id={`btn-${instanceId}`} class="send-btn">
+      <span class="btn-text">Send Request</span>
+    </GSButton>
+  </div>
 
   <h4>Response</h4>
-  <pre>{JSON.stringify(response, null, 2)}</pre>
+  <div class="response-wrapper" aria-live="polite" aria-busy="false">
+    <pre>No response yet.</pre>
+  </div>
 </div>
 
+<script define:vars={{ instanceId, url, method }}>
+  const container = document.getElementById(`console-${instanceId}`);
+  const btn = document.getElementById(`btn-${instanceId}`);
+  const textarea = container.querySelector('textarea');
+  const responseWrapper = container.querySelector('.response-wrapper');
+  const pre = container.querySelector('pre');
+  const btnText = btn.querySelector('.btn-text');
+
+  // Helper to create spinner
+  const createSpinner = () => {
+    const span = document.createElement('span');
+    span.className = 'gs-loader';
+    return span;
+  };
+
+  btn.addEventListener('click', async () => {
+    // Reset state
+    responseWrapper.setAttribute('aria-busy', 'true');
+    btn.setAttribute('disabled', 'true');
+    btn.classList.add('loading');
+
+    // Add spinner
+    const spinner = createSpinner();
+    btn.insertBefore(spinner, btn.firstChild);
+    btnText.textContent = 'Sending...';
+
+    // Prepare body
+    let body = textarea.value;
+    const options = {
+      method: method.toUpperCase(),
+      headers: { 'Content-Type': 'application/json' }
+    };
+
+    // Only attach body if not GET/HEAD and body has content
+    if (!['GET', 'HEAD'].includes(options.method) && body && body.trim()) {
+      try {
+        // validate JSON
+        JSON.parse(body);
+        options.body = body;
+      } catch (e) {
+        pre.textContent = 'Error: Invalid JSON in request body';
+        pre.classList.add('error');
+        resetBtn();
+        return;
+      }
+    }
+
+    try {
+      const res = await fetch(url, options);
+      const data = await res.json().catch(() => ({ status: res.status, statusText: res.statusText }));
+
+      pre.textContent = JSON.stringify(data, null, 2);
+      pre.classList.remove('error');
+    } catch (e) {
+      pre.textContent = `Network Error: ${e.message}`;
+      pre.classList.add('error');
+    } finally {
+      resetBtn();
+      responseWrapper.setAttribute('aria-busy', 'false');
+    }
+  });
+
+  function resetBtn() {
+    btn.removeAttribute('disabled');
+    btn.classList.remove('loading');
+    const spinner = btn.querySelector('.gs-loader');
+    if (spinner) spinner.remove();
+    btnText.textContent = 'Send Request';
+  }
+</script>
+
 <style>
-  .try-box textarea {
+  .try-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #020617; /* Fallback */
+    background: var(--gs-color-surface-strong, #020617);
+    border: 1px solid var(--gs-color-border, rgba(148,163,184,0.2));
+    border-radius: var(--gs-radius-md, 8px);
+  }
+
+  h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    color: var(--gs-color-subtle, #94a3b8);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  textarea {
     width: 100%;
-    height: 140px;
-    background: #020617;
-    color: #e2e8f0;
-    border: 1px solid rgba(148,163,184,0.4);
-    border-radius: 0.5rem;
+    height: 120px;
+    background: #0f172a; /* Fallback */
+    background: var(--gs-color-bg, #0f172a);
+    color: var(--gs-color-text, #e2e8f0);
+    border: 1px solid var(--gs-color-border, rgba(148,163,184,0.2));
+    border-radius: var(--gs-radius-sm, 6px);
     padding: 0.75rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--gs-accent, #38bdf8);
+    box-shadow: 0 0 0 1px var(--gs-accent, #38bdf8);
+  }
+
+  .actions {
+    margin: 1rem 0;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  pre {
+    background: #0f172a;
+    background: var(--gs-color-bg, #0f172a);
+    padding: 1rem;
+    border-radius: var(--gs-radius-sm, 6px);
+    overflow-x: auto;
+    font-size: 0.85rem;
+    color: #a5b4fc;
+    min-height: 3rem;
+  }
+
+  pre.error {
+    color: var(--gs-danger, #ef4444);
+    border: 1px solid var(--gs-danger, #ef4444);
+  }
+
+  /* Spinner styles copied from GSButton to ensure availability */
+  :global(.gs-loader) {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: rgba(255,255,255,0.9);
+    animation: spin 0.8s linear infinite;
+    margin-right: 0.5rem;
+    display: inline-block;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 </style>
