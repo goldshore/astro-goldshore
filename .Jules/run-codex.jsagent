@@ -11,10 +11,10 @@ const { execSync } = require('child_process');
 
 console.log("Starting Codex Agent...");
 
-const reportPath = '.Jules/sentinel-report.json';
+const reportPath = '.Jules/report.json';
 
 if (!fs.existsSync(reportPath)) {
-    console.log("ℹ️ No Sentinel report found (.Jules/sentinel-report.json). Nothing to do.");
+    console.log("ℹ️ No Sentinel report found (.Jules/report.json). Nothing to do.");
     process.exit(0);
 }
 
