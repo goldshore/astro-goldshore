@@ -66,10 +66,10 @@ importers:
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       '@goldshore/theme':
         specifier: file:../../packages/theme
-        version: link:../../packages/theme
+        version: file:packages/theme
       '@goldshore/ui':
         specifier: file:../../packages/ui
-        version: link:../../packages/ui
+        version: file:packages/ui(astro@5.16.5)
       astro:
         specifier: ^5.15.9
         version: 5.16.5(@types/node@25.0.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -80,6 +80,9 @@ importers:
 
   apps/api-worker:
     dependencies:
+      '@goldshore/auth':
+        specifier: workspace:^
+        version: link:../../packages/auth
       hono:
         specifier: ^4.0.0
         version: 4.11.0
@@ -114,7 +117,7 @@ importers:
     dependencies:
       '@goldshore/auth':
         specifier: file:../../packages/auth
-        version: link:../../packages/auth
+        version: file:packages/auth
       hono:
         specifier: ^4.0.0
         version: 4.11.0
@@ -150,10 +153,10 @@ importers:
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       '@goldshore/theme':
         specifier: file:../../packages/theme
-        version: link:../../packages/theme
+        version: file:packages/theme
       '@goldshore/ui':
         specifier: file:../../packages/ui
-        version: link:../../packages/ui
+        version: file:packages/ui(astro@5.16.5)
       astro:
         specifier: ^5.15.9
         version: 5.16.5(@types/node@25.0.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -5929,3 +5932,25 @@ packages:
 
   /zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
+
+  file:packages/auth:
+    resolution: {directory: packages/auth, type: directory}
+    name: '@goldshore/auth'
+    dependencies:
+      jose: 6.1.3
+    dev: false
+
+  file:packages/theme:
+    resolution: {directory: packages/theme, type: directory}
+    name: '@goldshore/theme'
+    dev: false
+
+  file:packages/ui(astro@5.16.5):
+    resolution: {directory: packages/ui, type: directory}
+    id: file:packages/ui
+    name: '@goldshore/ui'
+    peerDependencies:
+      astro: ^5.15.9
+    dependencies:
+      astro: 5.16.5(@types/node@25.0.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+    dev: false
