@@ -1,53 +1,55 @@
-#!/usr/bin/env node
-/**
- * CONFLICT-SWEEPER bootstrapper
- * - surfaces the conflict resolution prompt
- * - offers a Jules API example if a key is present
- */
+// .Jules/run-conflict-sweeper.jsagent
+const fs = require('fs');
+const { execSync } = require('child_process');
 
-const fs = require('node:fs');
-const path = require('node:path');
+console.log('Running Jules Conflict Sweeper...');
 
-const repoRoot = process.cwd();
-const promptPath = path.join(repoRoot, 'AI', 'prompts', 'conflict-sweeper.md');
-
-function readPrompt() {
-  if (!fs.existsSync(promptPath)) {
-    console.error(`Prompt not found at ${promptPath}`);
-    process.exit(1);
-  }
-  return fs.readFileSync(promptPath, 'utf8');
+// Helper to run command and log
+function run(cmd) {
+    try {
+        console.log(`> ${cmd}`);
+        execSync(cmd, { stdio: 'inherit' });
+    } catch (e) {
+        console.error(`Command failed: ${cmd}`);
+        throw e;
+    }
 }
 
-function printHeader(title) {
-  console.log(`\n=== ${title} ===`);
+// 1. Detect Lockfile Conflict
+// We assume this runs in a context where we might have just pulled or merged
+// and want to see if pnpm-lock.yaml is in a bad state or if we just want to regenerate it to be safe.
+// Since "Golden Rule" says: "If pnpm-lock.yaml conflicts: delete + regenerate",
+// We can check if the file has conflict markers OR just regeneration logic if requested.
+
+// For this sweeper, we'll try to detect if we are in a "conflicted state" regarding lockfile
+// by checking if `pnpm install` fails or if the file has markers.
+
+const lockfile = 'pnpm-lock.yaml';
+
+let hasConflict = false;
+if (fs.existsSync(lockfile)) {
+    const content = fs.readFileSync(lockfile, 'utf8');
+    if (content.includes('<<<<<<<')) {
+        hasConflict = true;
+        console.log('Detected conflict markers in pnpm-lock.yaml');
+    }
 }
 
-function emitCurlExample() {
-  const apiKey = process.env.JULES_API_KEY || '';
-  if (!apiKey) {
-    console.log('JULES_API_KEY not provided; printing prompt for manual use.');
-    return;
-  }
+if (hasConflict || process.env.FORCE_REGENERATE_LOCKFILE) {
+    console.log('Regenerating lockfile per Golden Rule 0.1...');
+    try {
+        if (fs.existsSync(lockfile)) fs.unlinkSync(lockfile);
+        if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
 
-  const payload = {
-    displayName: 'CONFLICT-SWEEPER',
-    prompt: readPrompt(),
-  };
+        run('pnpm install');
 
-  console.log('Curl example:');
-  console.log(
-    `curl -X POST https://jules.googleapis.com/v1alpha/sessions \\\n  -H "X-Goog-Api-Key: ${apiKey}" \\\n  -H "Content-Type: application/json" \\\n  -d '${JSON.stringify(payload)}'`
-  );
+        // If in a git repo, stage it?
+        // We leave committing to the caller (GitHub Action or user)
+        console.log('✅ Lockfile regenerated.');
+    } catch (e) {
+        console.error('❌ Failed to regenerate lockfile.');
+        process.exit(1);
+    }
+} else {
+    console.log('No lockfile conflict detected. Skipping regeneration.');
 }
-
-function main() {
-  printHeader('Conflict Sweeper prompt');
-  console.log(readPrompt());
-  printHeader('Usage');
-  console.log('- Run nightly or on-demand to clear merge conflicts.');
-  console.log('- Pair with lockfile discipline checks to prevent thrash.');
-  emitCurlExample();
-}
-
-main();

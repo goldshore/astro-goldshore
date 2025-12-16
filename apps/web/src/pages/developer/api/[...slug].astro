@@ -19,7 +19,7 @@ const paths = Object.entries(openapi.paths || {});
 <html>
   <body class="api-body">
 
-    <ApiSidebar version={version} paths={paths} />
+    <ApiSidebar openapi={openapi} />
 
     <main class="api-main">
       {endpointId

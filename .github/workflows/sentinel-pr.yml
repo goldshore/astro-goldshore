@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
 
 jobs:
@@ -14,12 +14,45 @@ jobs:
     runs-on: ubuntu-latest
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout repository
+      - uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
         uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
       - name: Setup Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Preview SENTINEL prompt
-        run: node ./.Jules/run-sentinel.jsagent
+          cache: 'pnpm'
+
+      - name: Run Sentinel (Auto-Fix)
+        run: |
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          node ./.Jules/run-sentinel.jsagent --mode=pr --fix
+
+          # Check for changes and push
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "chore: Sentinel auto-fixes"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+      - name: Run SENTINEL (PR Mode)
+        run: node ./.Jules/run-sentinel.jsagent --mode=pr
+      - name: Upload Sentinel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .Jules/sentinel-report.json

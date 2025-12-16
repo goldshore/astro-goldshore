@@ -1,15 +1,74 @@
 ---
-const { title = "GoldShore" } = Astro.props;
-import NavBar from "../components/NavBar.astro";
-import Footer from "../components/Footer.astro";
+import '@goldshore/theme';
+import logo from '@goldshore/theme/assets/logo.svg';
+import { GSButton } from '@goldshore/ui';
+
+const navLinks = [
+  { href: '/', label: 'Home' },
+  { href: '/about', label: 'About' },
+  { href: '/services', label: 'Services' },
+  { href: '/team', label: 'Team' },
+  { href: '/contact', label: 'Contact' }
+];
+
+const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.url.pathname } = Astro.props;
 ---
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
+    <meta name="description" content={description} />
   </head>
   <body>
-    <NavBar />
-    <slot />
-    <Footer />
+    <a href="#content" class="skip-link">Skip to content</a>
+    <div class="gs-page-shell">
+      <header class="gs-header">
+        <a class="gs-logo" href="/" aria-label="GoldShore home">
+          <img src={logo} alt="GoldShore Penrose logo" width="36" height="36" />
+          <span>GoldShore</span>
+        </a>
+        <nav class="gs-nav" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a href={link.href} aria-current={currentPath === link.href ? 'page' : undefined}>
+              {link.label}
+            </a>
+          ))}
+          <GSButton href="/developer" variant="secondary" class="gs-button--small">Developer</GSButton>
+        </nav>
+      </header>
+
+      <main id="content" class="gs-page-content">
+        <slot />
+      </main>
+
+      <footer class="gs-footer">
+        <div class="gs-section" style="padding: var(--gs-space-6) 0;">
+          <div class="gs-grid columns-2">
+            <div>
+              <div class="gs-logo" style="gap: var(--gs-space-2);">
+                <img src={logo} alt="GoldShore logo" width="32" height="32" loading="lazy" decoding="async" />
+                <span>GoldShore AI</span>
+              </div>
+              <p>Applied intelligence, resilient infrastructure, and responsive operations.</p>
+            </div>
+            <div class="gs-grid columns-2" style="gap: var(--gs-space-2);">
+              <div class="gs-nav" style="flex-direction: column; align-items: flex-start; gap: var(--gs-space-2);">
+                <strong>Company</strong>
+                <a href="/about">About</a>
+                <a href="/team">Team</a>
+                <a href="/services">Services</a>
+              </div>
+              <div class="gs-nav" style="flex-direction: column; align-items: flex-start; gap: var(--gs-space-2);">
+                <strong>Support</strong>
+                <a href="/contact">Contact</a>
+                <a href="/legal/privacy">Privacy</a>
+                <a href="/legal/terms">Terms</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>
