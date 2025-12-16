@@ -13,20 +13,6 @@ jobs:
   sentinel-nightly:
     name: Nightly SENTINEL scan
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,32 +21,53 @@ jobs:
         uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
         with:
           fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Run Sentinel Sweep
+      - name: Run Sentinel sweep
         run: |
           git config user.name "Jules Sentinel"
           git config user.email "jules@goldshore.ai"
           node ./.Jules/run-sentinel.jsagent --mode=sweep
 
-      - name: Run Codex
+      - name: Run Codex follow-ups
         run: node ./.Jules/run-codex.jsagent
 
-      - name: Upload Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .Jules/report.json
-      - name: Run SENTINEL (Nightly Mode)
-        run: node ./.Jules/run-sentinel.jsagent --mode=nightly
-      - name: Upload Sentinel Report
+      - name: Upload Sentinel report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-report-nightly
           path: .Jules/sentinel-report.json
+
+      - name: Summarize sweep
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = '.Jules/sentinel-report.json';
+            if (!fs.existsSync(reportPath)) {
+              core.info('Sentinel report missing');
+              return;
+            }
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const processed = report.branchesProcessed?.length || 0;
+            const codexNeeded = report.needsCodex?.length || 0;
+            const failed = report.failures?.length || 0;
+
+            core.summary.addHeading('Sentinel Nightly Summary');
+            core.summary.addRaw(`Branches processed: ${processed}`);
+            core.summary.addRaw(`<br/>Needs Codex: ${codexNeeded}`);
+            core.summary.addRaw(`<br/>Failures: ${failed}`);
+            core.summary.addRaw('<br/><br/>Report saved as artifact: sentinel-report-nightly');
+            await core.summary.write();
