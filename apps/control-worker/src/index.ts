@@ -1,52 +1,26 @@
 import { Hono } from "hono";
+import * as DNS from "./libs/dns";
+import * as Workers from "./libs/workers";
+import * as Pages from "./libs/pages";
+import * as Access from "./libs/access";
 
-type Env = {
-  CLOUDFLARE_API_TOKEN: string;
-  CLOUDFLARE_ACCOUNT_ID: string;
-  ENVIRONMENT: "production" | "preview" | "dev";
-};
+const app = new Hono();
 
-const app = new Hono<{ Bindings: Env }>();
+app.get("/", (c) => c.json({ service: "gs-control", ok: true }));
 
-app.get("/ops/ping", (c) => {
-  return c.json({
-    ok: true,
-    environment: c.env.ENVIRONMENT,
-    timestamp: new Date().toISOString(),
-  });
+app.post("/dns/apply", async (c) => {
+  const result = await DNS.sync(c.env);
+  return c.json(result);
 });
 
-app.get("/ops/preview/dns", async (c) => {
-  // In a full implementation, this would:
-  // - read infra/cloudflare/desired-state.yaml (baked into worker at build)
-  // - query Cloudflare DNS via API
-  // - diff expected vs actual
-  // - return a "plan"
-  return c.json({
-    ok: true,
-    message: "DNS preview not yet implemented in this skeleton.",
-  });
+app.post("/workers/reconcile", async (c) => {
+  const result = await Workers.reconcile(c.env);
+  return c.json(result);
 });
 
-app.post("/ops/apply/dns", async (c) => {
-  const body = await c.req.json().catch(() => ({}));
-  if (!body || body.confirm !== true) {
-    return c.json(
-      {
-        ok: false,
-        error:
-          "Refusing to apply DNS changes without { confirm: true } in request body.",
-      },
-      400
-    );
-  }
-
-  // Placeholder: Here you would loop through desired-state and call CF API.
-  return c.json({
-    ok: true,
-    applied: [],
-    note: "DNS apply logic not yet implemented in this skeleton.",
-  });
+app.post("/pages/deploy", async (c) => {
+  const result = await Pages.deploy(c.env);
+  return c.json(result);
 });
 
 export default app;
