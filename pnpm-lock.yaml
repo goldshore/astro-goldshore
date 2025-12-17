@@ -17,7 +17,7 @@ importers:
         version: 2.6.3
     devDependencies:
       '@astrojs/cloudflare':
-        specifier: ^12.6.12
+        specifier: latest
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       '@astrojs/tailwind':
         specifier: ^6.0.2
@@ -72,7 +72,7 @@ importers:
         version: 5.16.5(@types/node@25.0.1)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
     devDependencies:
       '@astrojs/cloudflare':
-        specifier: ^12.6.12
+        specifier: latest
         version: 12.6.12(@types/node@25.0.1)(astro@5.16.5)(tsx@4.21.0)(yaml@2.8.2)
       typescript:
         specifier: ^5.9.3
