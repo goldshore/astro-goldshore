@@ -2,8 +2,12 @@ import { Hono } from "hono";
 import * as DNS from "./libs/dns";
 import * as Workers from "./libs/workers";
 import * as Pages from "./libs/pages";
+import * as Access from "./libs/access";
+import type { ControlEnv } from "./libs/types";
+import { syncDNS } from "./tasks/syncDNS";
+import { rotateKeys } from "./tasks/rotateKeys";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: ControlEnv }>();
 
 app.get("/", (c) => c.json({ service: "gs-control", ok: true }));
 
@@ -22,4 +26,16 @@ app.post("/pages/deploy", async (c) => {
   return c.json(result);
 });
 
-export default app;
+app.post("/access/audit", async (c) => {
+  const report = await Access.audit(c.env);
+  return c.json(report);
+});
+
+export default {
+  fetch: app.fetch,
+  async scheduled(_controller, env, _ctx) {
+    await env.CONTROL_LOGS.put(Date.now().toString(), "control-run");
+    await syncDNS(env);
+    await rotateKeys(env);
+  }
+};

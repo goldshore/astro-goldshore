@@ -1,6 +1,6 @@
 {
   "name": "@goldshore/admin",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@goldshore/theme": "workspace:*",
-    "@goldshore/ui": "workspace:*",
-    "astro": "^5.16.0"
+    "@goldshore/theme": "file:../../packages/theme",
+    "@goldshore/ui": "file:../../packages/ui",
+    "astro": "^5.15.9"
   },
   "devDependencies": {
     "@astrojs/cloudflare": "^12.6.12",

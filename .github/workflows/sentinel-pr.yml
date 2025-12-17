@@ -1,0 +1,36 @@
+name: Sentinel PR Scan
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sentinel-pr:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      # Note: We do NOT install dependencies here because a broken lockfile
+      # is a common conflict Sentinel needs to fix. Sentinel is dependency-free.
+
+      - name: Run Sentinel Check
+        run: node .Jules/run-sentinel.jsagent --mode=pr

@@ -7,7 +7,8 @@ export default defineConfig({
   output: 'server',
   adapter: cloudflare(),
   integrations: [tailwind({
-    applyBaseStyles: false
+    applyBaseStyles: false,
+    configFile: "../../tailwind.config.mjs"
   })],
   vite: {
     publicDir: './openapi',

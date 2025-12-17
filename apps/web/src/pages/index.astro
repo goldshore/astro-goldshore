@@ -1,58 +1,67 @@
 ---
-import BaseLayout from '@apps/web/src/layouts/BaseLayout.astro';
-import GSButton from '@packages/ui/GSButton.astro';
+import { GSButton } from '@goldshore/ui';
+import MarketingLayout from '../layouts/MarketingLayout.astro';
 
-// Mock Data
-const kpis = [
-    { title: "Net Alpha", value: "+4.2%", style: "text-[var(--gs-success)]" },
-    { title: "Risk Tolerance", value: "LOW", style: "text-[var(--gs-brand-blue)]" },
-    { title: "Agent Efficiency", value: "99.99%", style: "text-[var(--gs-brand-gold)]" },
+export const prerender = true;
+
+const capabilities = [
+  {
+    title: 'Algorithmic Precision',
+    body: 'Execution engines tuned for millisecond response and adaptive guardrails.',
+  },
+  {
+    title: 'Resilient Security',
+    body: 'Zero-trust defaults, observability built-in, and layered failover patterns.',
+  },
+  {
+    title: 'Global Presence',
+    body: 'Low-latency routes across regions with automated capacity scaling.',
+  },
+];
+
+const highlights = [
+  { label: 'Availability', value: '99.995%', tone: 'success' },
+  { label: 'Deploys / week', value: '48', tone: 'info' },
+  { label: 'Signals processed / day', value: '2.1B', tone: 'warning' },
 ];
 ---
-<BaseLayout title="GoldShore | Steer Capital with Intelligence">
+<MarketingLayout title="GoldShore | Shaping Waves" description="Unified AI infrastructure for trading and intelligent operations.">
+  <section class="gs-hero">
+    <div>
+      <p class="gs-badge" style="margin-bottom: var(--gs-space-3);">Modern ops for fluid markets</p>
+      <h1>Shaping Waves with Applied Intelligence</h1>
+      <p>
+        GoldShore builds resilient, automation-first systems for trading, control, and applied intelligence. Each surface ships with observability, safety, and responsive design baked in.
+      </p>
+      <div style="display:flex; gap: var(--gs-space-3); flex-wrap: wrap;">
+        <GSButton href="/services">View Services</GSButton>
+        <GSButton href="/contact" variant="secondary">Book a call</GSButton>
+      </div>
+    </div>
+    <div class="gs-card">
+      <h3 class="section-title"><span>⇄</span>Performance at a glance</h3>
+      <div class="gs-grid columns-2">
+        {highlights.map((item) => (
+          <div class="gs-kpi">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <div class={`gs-badge ${item.tone ?? ''}`}>Live</div>
+          </div>
+        ))}
+      </div>
+      <div class="gs-helper" style="margin-top: var(--gs-space-4);">Backed by global routing, automated rollbacks, and human-in-the-loop controls.</div>
+    </div>
+  </section>
 
-    <!-- Hero Section -->
-    <section class="max-w-4xl mx-auto text-center py-24 px-4 space-y-6">
-        <h1 class="text-6xl gs-heading tracking-tight" style="color: var(--gs-text-primary);">
-            Steer Capital with <span style="color: var(--gs-brand-blue);">AI Intelligence</span>.
-        </h1>
-        <p class="text-xl" style="color: var(--gs-text-secondary);">
-            The unified system for market analytics, secure data, and automated strategic operations.
-        </p>
-        <div class="flex justify-center space-x-4">
-            <GSButton href="https://admin.goldshore.ai" variant="primary">Access Console</GSButton>
-            <GSButton href="/contact" variant="secondary">Request Demo</GSButton>
-        </div>
-    </section>
-
-    <!-- Metrics Bar (Actionable Content) -->
-    <section class="max-w-7xl mx-auto px-4 pb-16">
-        <div class="grid grid-cols-3 gap-6">
-            {kpis.map(kpi => (
-                <div class="gs-card text-center">
-                    <p class="text-xs uppercase tracking-wider" style="color: var(--gs-text-secondary);">{kpi.title}</p>
-                    <p class={`text-4xl gs-heading mt-2 ${kpi.style}`}>{kpi.value}</p>
-                </div>
-            ))}
-        </div>
-    </section>
-
-    <!-- Site Tree Example -->
-    <section class="max-w-7xl mx-auto px-4 pb-16">
-        <h2 class="text-3xl gs-heading mb-6">Site Tree & Navigation</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" style="color: var(--gs-brand-blue);">
-            <div><p class="font-bold mb-2">Public Web</p><ul>
-                <li>/about</li><li>/pricing</li><li>/contact</li>
-            </ul></div>
-            <div><p class="font-bold mb-2">User Portal</p><ul>
-                <li>/app/dashboard</li><li>/app/logs</li><li>/app/profile</li>
-            </ul></div>
-            <div><p class="font-bold mb-2">Admin Console</p><ul>
-                <li>/admin/overview</li><li>/admin/workers</li><li>/admin/users</li>
-            </ul></div>
-            <div><p class="font-bold mb-2">API Endpoints</p><ul>
-                <li>/health</li><li>/auth/login</li><li>/content/:slug</li>
-            </ul></div>
-        </div>
-    </section>
-</BaseLayout>
+  <section class="gs-section">
+    <div class="section-title"><span>◎</span><h2>Platform Values</h2></div>
+    <div class="gs-grid columns-3">
+      {capabilities.map((capability) => (
+        <article class="gs-card">
+          <h3>{capability.title}</h3>
+          <p>{capability.body}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</MarketingLayout>

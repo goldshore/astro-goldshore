@@ -1,0 +1,89 @@
+#!/usr/bin/env node
+/**
+ * Conflict Sweeper
+ * Rebase a branch onto main and regenerate pnpm-lock.yaml when lockfile conflicts appear.
+ * Usage: node .Jules/run-conflict-sweeper.jsagent [branch]
+ */
+
+const { execSync } = require('child_process');
+const fs = require('fs');
+
+function run(cmd, inherit = false) {
+  return execSync(cmd, { stdio: inherit ? 'inherit' : 'pipe', encoding: 'utf8' }).trim();
+}
+
+function git(args, inherit = false) {
+  return run(`git ${args}`, inherit);
+}
+
+function log(msg, type = 'info') {
+  const icons = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌' };
+  console.log(`${icons[type] || ''} ${msg}`);
+}
+
+function regenerateLockfile() {
+  log('Regenerating pnpm-lock.yaml from scratch', 'warning');
+  if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+  if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
+  run('pnpm install', true);
+  git('add pnpm-lock.yaml');
+}
+
+function rebaseBranch(targetBranch) {
+  const branch = targetBranch || git('rev-parse --abbrev-ref HEAD');
+  log(`Rebasing ${branch} onto origin/main`);
+
+  git(`fetch origin ${branch} main`);
+  git(`checkout -B ${branch} origin/${branch}`);
+
+  try {
+    git('rebase origin/main', true);
+    log('Rebase clean', 'success');
+    return { branch, resolved: false };
+  } catch (e) {
+    const conflicts = git('diff --name-only --diff-filter=U', true)
+      .split('\n')
+      .filter(Boolean);
+
+    if (conflicts.length === 1 && conflicts[0] === 'pnpm-lock.yaml') {
+      regenerateLockfile();
+      try {
+        git('rebase --continue', true);
+        log('Lockfile conflict resolved via regeneration', 'success');
+        return { branch, resolved: true };
+      } catch (err) {
+        git('rebase --abort', true);
+        throw new Error(`Could not continue rebase after regenerating lockfile: ${err.message}`);
+      }
+    }
+
+    git('rebase --abort', true);
+    throw new Error(`Rebase conflict requires manual resolution: ${conflicts.join(', ')}`);
+  }
+}
+
+function pushChanges(branch) {
+  const status = git('status --porcelain');
+  if (!status) {
+    log('No changes to push');
+    return;
+  }
+
+  git('add .');
+  git('commit -m "chore: conflict sweeper lockfile refresh"', true);
+  git(`push origin ${branch} --force-with-lease`, true);
+  log(`Pushed updated lockfile for ${branch}`, 'success');
+}
+
+(function main() {
+  try {
+    const branchArg = process.argv[2];
+    const result = rebaseBranch(branchArg);
+    if (result.resolved) {
+      pushChanges(result.branch);
+    }
+  } catch (e) {
+    log(e.message, 'error');
+    process.exit(1);
+  }
+})();

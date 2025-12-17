@@ -1,92 +1,66 @@
 ---
-import AdminLayout from '../layouts/AdminLayout.astro';
-import StatCard from '../components/StatCard.astro';
+import AdminLayout from "../layouts/AdminLayout.astro";
+import { GSButton, Card, Table } from "@goldshore/ui";
 
-const API_BASE = import.meta.env.PUBLIC_API;
+const stats = [
+  { label: "Active nodes", value: "142", meta: "All systems operational" },
+  { label: "Network load", value: "45%", meta: "Optimal efficiency" },
+  { label: "Transactions (24h)", value: "8,432", meta: "+12% vs prev" },
+  { label: "System alerts", value: "0", meta: "No open alerts" },
+];
 
-let systemInfo: any = null;
-
-try {
-  const res = await fetch(`${API_BASE}/system/info`, { cache: 'no-store' });
-  if (res.ok) {
-    systemInfo = await res.json();
-  }
-} catch (e) {
-  systemInfo = null;
-}
+const activity = [
+  { time: "10:42:05", event: "Node synchronization complete", status: "Success" },
+  { time: "10:40:12", event: "Admin login: marzton", status: "Success" },
+  { time: "10:35:00", event: "Daily backup routine started", status: "Pending" },
+  { time: "10:15:22", event: "API rate limit warning", status: "Warning" },
+];
 ---
 
-<AdminLayout title="Overview">
-  <section class="gs-grid">
-    <StatCard
-      label="API Status"
-      value={systemInfo ? 'Online' : 'Unknown'}
-      help={systemInfo ? `Timestamp: ${systemInfo.timestamp}` : 'No response'}
-    />
-
-    <StatCard
-      label="Gateway"
-      value="Configured"
-      help="Routing /api/* through gs-gateway"
-    />
-
-    <StatCard
-      label="Workers"
-      value="gs-api, gs-gateway, gs-control, gs-mail"
-      help="See Systems tab for detailed health."
-    />
+<AdminLayout title="System Overview">
+  <section class="gs-grid columns-3">
+    {stats.map((stat) => (
+      <Card>
+        <div class="gs-kpi">
+          <span>{stat.label}</span>
+          <strong>{stat.value}</strong>
+          <div class="gs-helper">{stat.meta}</div>
+        </div>
+      </Card>
+    ))}
   </section>
 
-  <section class="gs-panel">
-    <h2>Quick Links</h2>
-    <div class="gs-link-grid">
-      <a href="/systems" class="gs-link-tile">Systems</a>
-      <a href="/trading" class="gs-link-tile">Trading</a>
-      <a href="/settings" class="gs-link-tile">Settings</a>
-      <a href="https://status.goldshore.ai" class="gs-link-tile">Status (ext)</a>
-    </div>
+  <section class="gs-grid columns-2 gs-mt-6">
+    <Card>
+      <div class="section-title"><span>⟳</span><h3>Real-time Traffic</h3></div>
+      <p class="gs-helper">Synthetic sparkline placeholder showing inbound and outbound volume.</p>
+      <div class="gs-banner">Traffic steady, latency within SLO.</div>
+      <div class="gs-form-actions">
+        <GSButton class="gs-button--small">Refresh</GSButton>
+        <GSButton variant="secondary" class="gs-button--small">Export</GSButton>
+      </div>
+    </Card>
+
+    <Card class="gs-table-card">
+      <div class="section-title"><span>◎</span><h3>Recent Activity</h3></div>
+      <Table>
+        <thead>
+          <tr><th>Time</th><th>Event</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {activity.map((item) => (
+            <tr>
+              <td>{item.time}</td>
+              <td>{item.event}</td>
+              <td>
+                <span class={`gs-badge ${item.status === 'Warning' ? 'warning' : item.status === 'Pending' ? 'info' : 'success'}`}>
+                  {item.status}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Card>
   </section>
 </AdminLayout>
-
-<style>
-  .gs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .gs-panel {
-    border-radius: 1rem;
-    padding: 1.25rem 1.5rem;
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    background: radial-gradient(circle at top, #020617, #000);
-  }
-
-  .gs-panel h2 {
-    margin-top: 0;
-    font-size: 1rem;
-  }
-
-  .gs-link-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  .gs-link-tile {
-    display: block;
-    text-decoration: none;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    color: #e5e7eb;
-    font-size: 0.9rem;
-  }
-
-  .gs-link-tile:hover {
-    border-color: #22d3ee;
-  }
-</style>

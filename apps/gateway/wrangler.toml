@@ -20,5 +20,9 @@ id = "gs_api_kv_prod_001"
 binding = "JOB_QUEUE"
 queue = "gs-jobs"
 
+[[kv_namespaces]]
+binding = "GATEWAY_KV"
+id = "goldshore-gw-kv"
+
 [ai]
 binding = "AI"

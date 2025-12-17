@@ -5,15 +5,21 @@ const { tabs = [] } = Astro.props;
 <div class="gs-tabs">
   <div class="gs-tabs-header">
     {tabs.map((t) => (
-      <button onclick={`showTab(event, '${t.id}')`}>{t.label}</button>
+      <button class="gs-button gs-button--ghost gs-button--small" onclick={`showTab(event, '${t.id}')`}>
+        {t.label}
+      </button>
     ))}
   </div>
 
-  {tabs.map((t) => (
-    <div id={t.id} class="gs-tab" style={tabs.indexOf(t) === 0 ? 'display: block;' : 'display: none;'}>
-      <slot name={t.id} />
-    </div>
-  ))}
+  <!--
+    Refactored to avoid dynamic slot names which are not supported in Astro.
+    Consumers should place content directly in the default slot,
+    or we can implement a specific content structure if needed in the future.
+    For now, we render the default slot.
+  -->
+  <div class="gs-tab-content">
+      <slot />
+  </div>
 </div>
 
 <script is:inline>
@@ -24,37 +30,15 @@ const { tabs = [] } = Astro.props;
     // Deactivate all content tabs in this container
     const contentTabs = container.querySelectorAll('.gs-tab');
     contentTabs.forEach((el) => {
-        if (el.id === id) {
-            el.style.display = 'block';
-        } else {
-            el.style.display = 'none';
-        }
+        el.classList.toggle('is-active', el.id === id);
     });
 
-    // Optional: Update active state of buttons?
-    // The prompt didn't specify active state styles for buttons, but it's good UX.
-    // The prompt CSS has no active class for buttons.
-    // I will stick to just switching content.
+    const buttons = container.querySelectorAll('.gs-tabs-header button');
+    buttons.forEach((btn) => btn.classList.toggle('active', btn === event.target));
   }
 </script>
-
 <style>
-  .gs-tabs-header {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .gs-tabs-header button {
-    background: var(--gs-bg-panel);
-    border: 1px solid var(--gs-border);
-    padding: 0.45rem 1rem;
-    border-radius: var(--gs-radius-md);
-    color: var(--gs-fg-muted);
-    cursor: pointer;
-    font-family: inherit;
-  }
-  .gs-tabs-header button:hover {
-      background: var(--gs-bg-elevated);
-      color: var(--gs-fg);
-  }
+  .gs-tab { display: none; }
+  .gs-tab.is-active { display: block; }
+  .gs-tabs-header button.active { background: var(--gs-accent-soft); color: var(--gs-accent-strong); }
 </style>
