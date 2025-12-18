@@ -157,17 +157,6 @@ async function postComment(prNumber, body) {
   }
 }
 
-async function addLabel(prNumber, label) {
-    const ownerRepo = getOwnerRepo();
-    if (!ownerRepo || !prNumber) return;
-    try {
-        await githubRequest('POST', `/repos/${ownerRepo}/issues/${prNumber}/labels`, { labels: [label] });
-        log(`Added label '${label}' to PR #${prNumber}`, 'success');
-    } catch (e) {
-        log(`Failed to add label: ${e.message}`, 'error');
-    }
-}
-
 // --- Fixers ---
 
 function resolveLockfileConflict() {
@@ -243,8 +232,6 @@ function resolveMechanicalConflicts(filePath) {
                     theirs.push(lines[i]);
                     i++;
                 }
-                // Skip marker end line
-                if (i < lines.length && lines[i].startsWith(MARKER_END)) i++;
 
                 // Conflict Block: ours vs theirs
                 const oursText = ours.join('\n');
@@ -258,23 +245,15 @@ function resolveMechanicalConflicts(filePath) {
                     if (pinnedOurs === pinnedTheirs) resolution = pinnedOurs;
                 }
 
-                // Strategy 2: Astro Frontmatter / HTML
+                // Strategy 2: Astro Frontmatter
                 if (filePath.endsWith('.astro')) {
-                    // Normalize by trimming and ignoring whitespace
-                    const normOurs = oursText.replace(/\s/g, '');
-                    const normTheirs = theirsText.replace(/\s/g, '');
+                    const oursIsFM = oursText.trim().startsWith('---') || oursText.trim().endsWith('---');
+                    const theirsIsFM = theirsText.trim().startsWith('---') || theirsText.trim().endsWith('---');
 
-                    if (normOurs.includes(normTheirs) && normOurs.length > 0) resolution = oursText;
-                    else if (normTheirs.includes(normOurs) && normTheirs.length > 0) resolution = theirsText;
-
-                    // Specific duplicate frontmatter check
-                    if (!resolution) {
-                        const oursFM = oursText.match(/---\s*([\s\S]*?)\s*---/);
-                        const theirsFM = theirsText.match(/---\s*([\s\S]*?)\s*---/);
-                        if (oursFM && theirsFM && oursFM[1].trim() === theirsFM[1].trim()) {
-                            // Frontmatter is identical, check body
-                             resolution = theirsText; // Assume theirs is newer if frontmatter matches? Or just take one.
-                        }
+                    if (oursIsFM || theirsIsFM) {
+                        // If superset/subset
+                        if (oursText.includes(theirsText)) resolution = oursText;
+                        else if (theirsText.includes(oursText)) resolution = theirsText;
                     }
                 }
 
@@ -291,8 +270,8 @@ function resolveMechanicalConflicts(filePath) {
             }
         } else {
             finalContent.push(line);
-            i++;
         }
+        i++;
     }
 
     fs.writeFileSync(filePath, finalContent.join('\n'));
@@ -305,8 +284,8 @@ function resolveMechanicalConflicts(filePath) {
 }
 
 function postMergeHygiene() {
-    // Find all tracked files
-    const files = run(`git ls-files`).split('\n').filter(Boolean);
+    const files = run(`find . -type f -not -path "*/node_modules/*" -not -path "*/.git/*" -not -path "*/dist/*"`)
+      .split('\n').filter(Boolean);
 
     let fixedFiles = [];
 
@@ -324,115 +303,48 @@ function postMergeHygiene() {
             }
         }
 
-        // 2. Duplicate Astro Frontmatter / HTML
+        // 2. Duplicate Astro Frontmatter
         if (file.endsWith('.astro')) {
-             // Logic to find multiple frontmatter blocks (start/end)
-             // Regex to find multiple --- ... --- blocks at the start?
-             // Or just simple split check.
-             const parts = content.split('---');
-             // parts[0] is usually empty (before first ---)
-             // parts[1] is content of first FM
-             // parts[2] is content after first FM (HTML)
-             // If there is a second FM, it would appear as parts[2] containing ---?
-             // Actually, if content is:
-             // ---
-             // FM1
-             // ---
-             // ---
-             // FM2
-             // ---
-             // HTML
-             // Split '---':
-             // [0]: ""
-             // [1]: "\nFM1\n"
-             // [2]: "\n" (between 1st end and 2nd start)
-             // [3]: "\nFM2\n"
-             // [4]: "\nHTML"
-
-             if (parts.length >= 5) {
-                 // We have at least two frontmatter blocks?
-                 // Sentinel should mechanically remove one.
-                 // Let's assume the first one is correct (or merged).
-                 // Construct: --- parts[1] --- parts[4]...
-                 // But we need to be careful about where the split happens.
-                 // A safer way: remove the second block.
-
-                 // Reconstruct keeping only the first block and the last content
-                 // This assumes the duplicate is immediately following or similar.
-                 // Let's just strip everything between the 2nd '---' and 3rd '---'?
-                 // Actually, if we have 5 parts, we have:
-                 // --- (1) --- (2) --- (3) --- (4)
-                 // We want to keep 1, and the content after the last ---.
-
-                 // Heuristic: Keep the first frontmatter, discard others until the final HTML body.
-                 // If structure is suspicious (multiple FM blocks), simplify to first FM + last body.
-
-                 const firstFM = parts[1];
-                 const body = parts.slice(3).join('---'); // Join the rest, effectively skipping parts[2] (gap) and parts[3] (second FM) if it was adjacent?
-                 // Wait, parts.slice(3) starts from index 3.
-                 // If format is: --- FM1 --- --- FM2 --- HTML
-                 // [0]="" [1]="FM1" [2]=" " [3]="FM2" [4]="HTML"
-                 // keeping [1] and [4] seems right if we want to drop FM2.
-                 // But what if it's --- FM1 --- HTML --- some-separator ---
-                 // We shouldn't aggressively delete.
-
-                 // Only trigger if we detect the duplicate pattern specifically
-                 if (parts[0].trim() === '' && parts[1].trim().length > 0 && parts[2].trim() === '' && parts[3].trim().length > 0) {
-                     content = '---\n' + parts[1].trim() + '\n---\n' + parts.slice(4).join('---');
-                     modified = true;
-                 }
-             }
+            const collapsed = content.replace(/---\s*\n\s*---/g, '');
+            if (collapsed !== content) {
+                content = collapsed;
+                modified = true;
+            }
         }
 
         // 3. Missing Env Type
-        if ((file.endsWith('.ts') || file.endsWith('.js')) && (content.includes('Env') || content.includes('env: Env'))) {
-             if (!content.includes('interface Env') && !content.includes('type Env')) {
-                 const hasImport = content.includes("from '@cloudflare/workers-types'") || content.includes('worker-configuration.d.ts');
-                 if (!hasImport) {
-                      content = `import type { Env } from '@cloudflare/workers-types';\n` + content;
-                      modified = true;
-                 }
-             }
+        if ((file.endsWith('.ts') || file.endsWith('.js')) && content.includes('Env') && !content.includes('import type { Env }') && !content.includes('interface Env')) {
+            if (content.includes('fetch') || content.includes('handle')) {
+                if (!content.includes("@cloudflare/workers-types")) {
+                    content = `import type { Env } from '@cloudflare/workers-types';\n` + content;
+                    modified = true;
+                }
+            }
         }
 
         // 4. Dead TODOs
-        // Remove "return ...; // TODO" lines or similar unreachable code
-        if (content.match(/return\s+.*;\s*\n\s*\/\/\s*TODO/)) {
-            const newContent = content.replace(/(return\s+.*;)\s*\n\s*\/\/\s*TODO[\s\S]*?(\n\s*})/g, '$1$2');
-             if (newContent !== content) {
+        if (modified || content.match(/return\s*;[\s\n]*\/\/\s*TODO/)) {
+            const newContent = content.replace(/(return\s*.*;)[\s\n]*\/\/\s*TODO.*/g, '$1');
+            if (newContent !== content) {
                 content = newContent;
                 modified = true;
             }
         }
 
-        // 5. Missing Imports (Basic Fix)
-        // If "import ... from './routes/user'" fails, try to see if it should be an empty export?
-        // Or if it's missing, maybe create it?
-        // The instruction says "create the module".
-        const importRegex = /import\s+.*?\s+from\s+['"](\..*?)['"]/g;
+        // 5. Missing Imports Check
+        const importRegex = /import\s+.*\s+from\s+['"](\..*?)['"]/g;
         let match;
         while ((match = importRegex.exec(content)) !== null) {
             const importPath = match[1];
             try {
-                const dir = path.dirname(file);
-                const absPath = path.resolve(dir, importPath);
-
-                // Check for existence with common extensions
+                const resolvedPath = path.resolve(path.dirname(file), importPath);
                 const extensions = ['', '.ts', '.js', '.tsx', '.jsx', '.astro', '.json'];
-                const exists = extensions.some(ext => fs.existsSync(absPath + ext) || fs.existsSync(path.join(absPath, 'index' + ext)));
-
+                const exists = extensions.some(ext => fs.existsSync(resolvedPath + ext) || fs.existsSync(path.join(resolvedPath, 'index' + ext)));
                 if (!exists) {
-                     // Create empty module to satisfy build
-                     // Defaulting to .ts if extensionless
-                     const newFile = absPath + (path.extname(absPath) || '.ts');
-                     ensureDir(newFile);
-                     fs.writeFileSync(newFile, '// Auto-generated by Sentinel to fix missing import\nexport {};\n');
-                     log(`Created missing module: ${newFile}`, 'action');
-                     fixedFiles.push(path.relative(process.cwd(), newFile));
+                    log(`Warning: Missing module detected in ${file}: ${importPath}`, 'warning');
                 }
             } catch (e) {}
         }
-
 
         if (modified) {
             fs.writeFileSync(file, content);
@@ -449,9 +361,6 @@ async function processPR(prNumber, branch, mergeableState) {
   log(`Processing PR #${prNumber} (${branch}) - State: ${mergeableState}`);
 
   try {
-    // Determine start SHA to revert to if needed
-    const startSha = git(`rev-parse HEAD`);
-
     if (MODE === 'SWEEP' && mergeableState !== 'dirty') {
         log(`PR #${prNumber} is clean. Skipping.`, 'info');
         return null;
@@ -519,7 +428,7 @@ async function processPR(prNumber, branch, mergeableState) {
         resolvedFiles.push(...hygieneFiles);
         git(`add .`);
         try {
-            git(`commit -m "Sentinel: resolve merge conflicts and pin actions [skip ci]"`);
+            git(`commit -m "Sentinel: resolve merge conflicts and pin actions"`);
         } catch(e) {}
     }
 
@@ -530,9 +439,8 @@ async function processPR(prNumber, branch, mergeableState) {
         run(`pnpm lint`, { inherit: true });
         run(`pnpm build`, { inherit: true });
     } catch (e) {
-        log('Verification failed. Reverting changes...', 'error');
-        // Revert to origin state to discard bad mechanical fixes
-        git(`reset --hard origin/${branch}`);
+        log('Verification failed.', 'error');
+        // Return needsCodex so it's reported
         return { branch, error: 'Build/Lint verification failed', needsCodex: true, conflicts: ['Build/Lint Verification'] };
     }
 
@@ -556,7 +464,7 @@ async function processPR(prNumber, branch, mergeableState) {
     return { branch, success: true, fixed: resolvedFiles };
 
   } finally {
-      // Ensure we leave the repo clean for next sweep if in sweep mode
+      // Ensure we leave the repo clean for next sweep
       if (MODE === 'SWEEP') {
           cleanupGitState();
       }
@@ -579,7 +487,6 @@ async function runSweep() {
                 if (result.needsCodex) {
                     report.needsCodex.push(result);
                     await postComment(pr.number, `🛡️ **Sentinel Report**\n\nSentinel found issues requiring attention:\n${result.conflicts ? result.conflicts.map(c => `- ${c}`).join('\n') : '- Manual Review Needed'}\n\nMarking for Codex/Human review.`);
-                    await addLabel(pr.number, 'needs-codex');
                 }
             }
           } catch (e) {
@@ -599,62 +506,14 @@ async function runPRMode() {
 
     const pr = await getPRForBranch(branch);
     if (!pr) {
-        log('No open PR found for this branch. Skipping logic that requires PR info.', 'warning');
-        // We can still run hygiene checks on the branch itself?
-        // The instructions imply Sentinel runs on PRs.
-        // If no PR, we might just be on a branch.
-        // Let's assume we proceed with local hygiene.
+        log('No open PR found for this branch.', 'warning');
+        return;
     }
 
-    // In PR mode, we are already checked out on the branch (by the action).
-    // So we just run hygiene and verification.
-
-    // Hygiene
-    const hygieneFiles = postMergeHygiene();
-    if (hygieneFiles.length > 0) {
-        git(`add .`);
-        try {
-            git(`commit -m "Sentinel: resolve merge conflicts and pin actions [skip ci]"`);
-        } catch(e) {}
-    }
-
-    // Verify
-    try {
-        run(`pnpm install`, { inherit: true });
-        run(`pnpm lint`, { inherit: true });
-        run(`pnpm build`, { inherit: true });
-    } catch (e) {
-        log('Verification failed.', 'error');
-        process.exit(1);
-    }
-
-    // Push is handled by the action if we commit?
-    // The previous implementation pushed in PR mode too?
-    // Wait, processPR handles push.
-    // If we reuse processPR, it tries to fetch/checkout/rebase.
-    // In PR action, we are already on the branch.
-    // Let's just use processPR but skip checkout if we are already on it?
-    // Or just let processPR do its thing.
-
-    if (pr) {
-         // Re-use logic but avoid re-checkout if possible.
-         // Actually processPR does: checkout, rebase, resolve, verify, push.
-         // If we are already on the branch, we can skip checkout.
-         // But processPR is designed for SWEEP mostly.
-
-         // Let's simplify PR Mode:
-         // We did hygiene. We verified. Now push if needed.
-         if (hygieneFiles.length > 0) {
-             log(`Pushing fixes to ${branch}...`, 'action');
-             try {
-                git(`push origin HEAD:${branch}`); // Just push current HEAD
-                // Add comment?
-                await postComment(pr.number, `🛡️ **Sentinel Report**\n\nApplied automated hygiene fixes in:\n${hygieneFiles.map(f => `- ${f}`).join('\n')}\n\nBuild & Lint passed.`);
-             } catch(e) {
-                 log(`Push failed: ${e.message}`, 'error');
-                 process.exit(1);
-             }
-         }
+    const result = await processPR(pr.number, branch, pr.mergeable_state || 'unknown');
+    if (result && result.needsCodex) {
+         log('Sentinel found issues needing Codex.', 'warning');
+         process.exit(1);
     }
 }
 
