@@ -1,12 +1,13 @@
 name: Sentinel Nightly Scan
 on:
   schedule:
-    - cron: "30 2 * * *" # Adjust UTC time as needed
+    - cron: "30 2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   sentinel:

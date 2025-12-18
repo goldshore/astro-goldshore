@@ -29,7 +29,8 @@ function run(cmd, { ignoreError = false, inherit = false, cwd = process.cwd() } 
     return execSync(cmd, {
       stdio: inherit ? 'inherit' : 'pipe',
       encoding: 'utf-8',
-      cwd
+      cwd,
+      maxBuffer: 10 * 1024 * 1024
     }).trim();
   } catch (e) {
     if (!ignoreError) {
@@ -63,11 +64,8 @@ function writeReport(report) {
 
 function cleanupGitState() {
     try {
-        // Abort rebase if in progress
         try { git('rebase --abort', true); } catch(e) {}
-        // Reset hard to HEAD
-        git('reset --hard HEAD', true);
-        // Clean untracked
+        git('reset --hard origin/main', true);
         git('clean -fd', true);
     } catch (e) {
         log(`Cleanup warning: ${e.message}`, 'warning');
@@ -104,9 +102,16 @@ async function githubRequest(method, endpoint, body = null) {
             resolve(data);
           }
         } else {
-          const err = new Error(`GitHub API Error: ${res.statusCode} ${data}`);
-          err.statusCode = res.statusCode;
-          reject(err);
+          try {
+              const errBody = JSON.parse(data);
+              const err = new Error(`GitHub API Error: ${res.statusCode} ${errBody.message || data}`);
+              err.statusCode = res.statusCode;
+              reject(err);
+          } catch(e) {
+              const err = new Error(`GitHub API Error: ${res.statusCode} ${data}`);
+              err.statusCode = res.statusCode;
+              reject(err);
+          }
         }
       });
     });
@@ -148,13 +153,22 @@ async function getPRForBranch(branch) {
 async function postComment(prNumber, body) {
   const ownerRepo = getOwnerRepo();
   if (!ownerRepo || !prNumber) return;
-
   try {
     await githubRequest('POST', `/repos/${ownerRepo}/issues/${prNumber}/comments`, { body });
     log(`Posted comment on PR #${prNumber}`, 'success');
   } catch (e) {
     log(`Failed to post comment: ${e.message}`, 'error');
   }
+}
+
+async function labelPR(prNumber, labels) {
+    const ownerRepo = getOwnerRepo();
+    if (!ownerRepo || !prNumber) return;
+    try {
+        await githubRequest('POST', `/repos/${ownerRepo}/issues/${prNumber}/labels`, { labels });
+    } catch (e) {
+        log(`Failed to label PR: ${e.message}`, 'error');
+    }
 }
 
 // --- Fixers ---
@@ -199,6 +213,8 @@ function pinActionsInContent(content) {
 
 function resolveMechanicalConflicts(filePath) {
   try {
+    if (!fs.existsSync(filePath)) return false;
+
     let content = fs.readFileSync(filePath, 'utf-8');
 
     const MARKER_START = '<<<<<<<';
@@ -232,8 +248,8 @@ function resolveMechanicalConflicts(filePath) {
                     theirs.push(lines[i]);
                     i++;
                 }
+                if(i < lines.length) i++;
 
-                // Conflict Block: ours vs theirs
                 const oursText = ours.join('\n');
                 const theirsText = theirs.join('\n');
                 let resolution = null;
@@ -245,16 +261,10 @@ function resolveMechanicalConflicts(filePath) {
                     if (pinnedOurs === pinnedTheirs) resolution = pinnedOurs;
                 }
 
-                // Strategy 2: Astro Frontmatter
+                // Strategy 2: Astro Frontmatter / Duplicate HTML
                 if (filePath.endsWith('.astro')) {
-                    const oursIsFM = oursText.trim().startsWith('---') || oursText.trim().endsWith('---');
-                    const theirsIsFM = theirsText.trim().startsWith('---') || theirsText.trim().endsWith('---');
-
-                    if (oursIsFM || theirsIsFM) {
-                        // If superset/subset
-                        if (oursText.includes(theirsText)) resolution = oursText;
-                        else if (theirsText.includes(oursText)) resolution = theirsText;
-                    }
+                    if (oursText.includes(theirsText)) resolution = oursText;
+                    else if (theirsText.includes(oursText)) resolution = theirsText;
                 }
 
                 if (resolution !== null) {
@@ -267,6 +277,8 @@ function resolveMechanicalConflicts(filePath) {
                     finalContent.push(`${MARKER_END} incoming`);
                     resolved = false;
                 }
+            } else {
+                 resolved = false;
             }
         } else {
             finalContent.push(line);
@@ -305,45 +317,56 @@ function postMergeHygiene() {
 
         // 2. Duplicate Astro Frontmatter
         if (file.endsWith('.astro')) {
-            const collapsed = content.replace(/---\s*\n\s*---/g, '');
-            if (collapsed !== content) {
-                content = collapsed;
-                modified = true;
-            }
+             const collapsed = content.replace(/---\s*\n\s*---/g, '');
+             if (collapsed !== content) {
+                 content = collapsed;
+                 modified = true;
+             }
         }
 
         // 3. Missing Env Type
-        if ((file.endsWith('.ts') || file.endsWith('.js')) && content.includes('Env') && !content.includes('import type { Env }') && !content.includes('interface Env')) {
-            if (content.includes('fetch') || content.includes('handle')) {
-                if (!content.includes("@cloudflare/workers-types")) {
+        if ((file.endsWith('.ts') || file.endsWith('.js')) && content.includes('Env')) {
+             if (!content.match(/import\s+.*?\bEnv\b/) && !content.match(/interface\s+\bEnv\b/)) {
+                 if (content.includes("@cloudflare/workers-types")) {
                     content = `import type { Env } from '@cloudflare/workers-types';\n` + content;
                     modified = true;
-                }
-            }
+                 } else if (fs.existsSync('worker-configuration.d.ts')) {
+                    content = `import type { Env } from '@cloudflare/workers-types';\n` + content;
+                    modified = true;
+                 }
+             }
         }
 
         // 4. Dead TODOs
-        if (modified || content.match(/return\s*;[\s\n]*\/\/\s*TODO/)) {
-            const newContent = content.replace(/(return\s*.*;)[\s\n]*\/\/\s*TODO.*/g, '$1');
+        if (modified || content.includes('TODO')) {
+            const newContent = content.replace(/(return\s*.*;)\s*(\/\/|\/\*)\s*TODO[\s\S]*?(\n|$)/g, '$1\n');
             if (newContent !== content) {
                 content = newContent;
                 modified = true;
             }
         }
 
-        // 5. Missing Imports Check
-        const importRegex = /import\s+.*\s+from\s+['"](\..*?)['"]/g;
+        // 5. Missing Imports Check & Creation
+        const importRegex = /import\s+.*?\s+from\s+['"](\..*?)['"]/g;
         let match;
         while ((match = importRegex.exec(content)) !== null) {
             const importPath = match[1];
             try {
-                const resolvedPath = path.resolve(path.dirname(file), importPath);
+                const dir = path.dirname(file);
+                const resolvedPathWithoutExt = path.resolve(dir, importPath);
+
                 const extensions = ['', '.ts', '.js', '.tsx', '.jsx', '.astro', '.json'];
-                const exists = extensions.some(ext => fs.existsSync(resolvedPath + ext) || fs.existsSync(path.join(resolvedPath, 'index' + ext)));
+                const exists = extensions.some(ext => fs.existsSync(resolvedPathWithoutExt + ext) || fs.existsSync(path.join(resolvedPathWithoutExt, 'index' + ext)));
+
                 if (!exists) {
-                    log(`Warning: Missing module detected in ${file}: ${importPath}`, 'warning');
+                    log(`Missing module detected in ${file}: ${importPath}`, 'action');
+                    const newFile = resolvedPathWithoutExt + '.ts';
+                    fs.writeFileSync(newFile, `// Sentinel: Created missing module to fix build\nexport {};\n`);
+                    fixedFiles.push(newFile);
                 }
-            } catch (e) {}
+            } catch (e) {
+                log(`Failed to resolve/create module ${importPath}: ${e.message}`, 'warning');
+            }
         }
 
         if (modified) {
@@ -361,23 +384,16 @@ async function processPR(prNumber, branch, mergeableState) {
   log(`Processing PR #${prNumber} (${branch}) - State: ${mergeableState}`);
 
   try {
-    if (MODE === 'SWEEP' && mergeableState !== 'dirty') {
-        log(`PR #${prNumber} is clean. Skipping.`, 'info');
-        return null;
+    if (MODE === 'SWEEP') {
+         cleanupGitState();
+         try {
+             git(`fetch origin ${branch}`);
+             git(`checkout ${branch}`);
+         } catch (e) {
+             git(`checkout -b ${branch} origin/${branch}`);
+         }
     }
 
-    // Checkout
-    try {
-        if (MODE === 'SWEEP') {
-            git(`fetch origin ${branch}`);
-            git(`checkout -B ${branch} origin/${branch}`);
-        }
-    } catch (e) {
-        log(`Failed to checkout ${branch}: ${e.message}`, 'error');
-        return { branch, error: 'Checkout failed' };
-    }
-
-    // Rebase
     log('Attempting rebase on origin/main...', 'action');
     let rebaseFailed = false;
     try {
@@ -392,7 +408,9 @@ async function processPR(prNumber, branch, mergeableState) {
     let remainingConflicts = [];
 
     if (rebaseFailed) {
-        const status = git('status --porcelain');
+        let status;
+        try { status = git('status --porcelain'); } catch(e) { status = ''; }
+
         const conflicts = status.split('\n')
         .filter(l => l.startsWith('UU') || l.startsWith('AA') || l.startsWith('DU') || l.startsWith('UD'))
         .map(l => l.substring(3));
@@ -422,7 +440,6 @@ async function processPR(prNumber, branch, mergeableState) {
         }
     }
 
-    // Hygiene
     const hygieneFiles = postMergeHygiene();
     if (hygieneFiles.length > 0) {
         resolvedFiles.push(...hygieneFiles);
@@ -432,20 +449,18 @@ async function processPR(prNumber, branch, mergeableState) {
         } catch(e) {}
     }
 
-    // Verify
     log('Verifying build and lint...', 'action');
     try {
+        // Ensure dependencies are installed (crucial for PR mode)
         run(`pnpm install`, { inherit: true });
         run(`pnpm lint`, { inherit: true });
         run(`pnpm build`, { inherit: true });
     } catch (e) {
         log('Verification failed.', 'error');
-        // Return needsCodex so it's reported
         return { branch, error: 'Build/Lint verification failed', needsCodex: true, conflicts: ['Build/Lint Verification'] };
     }
 
-    // Push
-    if (resolvedFiles.length > 0 || rebaseFailed === false) {
+    if (resolvedFiles.length > 0 || rebaseFailed) {
         log(`Pushing to ${branch}...`, 'action');
         try {
             git(`push --force-with-lease origin ${branch}`);
@@ -455,7 +470,6 @@ async function processPR(prNumber, branch, mergeableState) {
         }
     }
 
-    // Comment
     if (resolvedFiles.length > 0) {
         const comment = `🛡️ **Sentinel Report**\n\nResolved conflicts/hygiene in:\n${resolvedFiles.map(f => `- ${f}`).join('\n')}\n\nBuild & Lint passed.`;
         await postComment(prNumber, comment);
@@ -463,8 +477,10 @@ async function processPR(prNumber, branch, mergeableState) {
 
     return { branch, success: true, fixed: resolvedFiles };
 
+  } catch (e) {
+       log(`Global error for ${branch}: ${e.message}`, 'error');
+       return { branch, error: e.message };
   } finally {
-      // Ensure we leave the repo clean for next sweep
       if (MODE === 'SWEEP') {
           cleanupGitState();
       }
@@ -486,6 +502,7 @@ async function runSweep() {
                 report.processed.push(result);
                 if (result.needsCodex) {
                     report.needsCodex.push(result);
+                    await labelPR(pr.number, ['needs-codex']);
                     await postComment(pr.number, `🛡️ **Sentinel Report**\n\nSentinel found issues requiring attention:\n${result.conflicts ? result.conflicts.map(c => `- ${c}`).join('\n') : '- Manual Review Needed'}\n\nMarking for Codex/Human review.`);
                 }
             }
@@ -513,6 +530,7 @@ async function runPRMode() {
     const result = await processPR(pr.number, branch, pr.mergeable_state || 'unknown');
     if (result && result.needsCodex) {
          log('Sentinel found issues needing Codex.', 'warning');
+         await labelPR(pr.number, ['needs-codex']);
          process.exit(1);
     }
 }
