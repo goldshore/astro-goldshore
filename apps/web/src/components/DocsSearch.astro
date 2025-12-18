@@ -42,28 +42,45 @@ let results = [];
     const signal = searchController.signal;
 
     if (!query.trim()) {
-      if(resultsDiv) resultsDiv.innerHTML = '';
+      if(resultsDiv) resultsDiv.textContent = '';
       return;
     }
 
     try {
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query), { signal });
       if (!res.ok) {
-        if (resultsDiv) resultsDiv.innerHTML = '';
+        if (resultsDiv) resultsDiv.textContent = '';
         console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
         return;
       }
       const results = await res.json();
 
       if (resultsDiv) {
-        resultsDiv.innerHTML = results.map((r) =>
-          `<a href="${r.url}">${r.title}</a>`
-        ).join('');
+        resultsDiv.textContent = ''; // Clear previous results
+
+        results.forEach((r) => {
+            const a = document.createElement('a');
+            // Sentinel: Basic protection against javascript: URIs
+            if (r.url && !r.url.trim().toLowerCase().startsWith('javascript:')) {
+                a.href = r.url;
+            } else {
+                a.href = '#';
+                console.warn('Blocked potentially unsafe URL in search results');
+            }
+            a.textContent = r.title; // Sentinel: Prevent XSS by using textContent instead of innerHTML
+            resultsDiv.appendChild(a);
+        });
       }
     } catch (e) {
       if (e.name === 'AbortError') return; // Ignore aborted requests
       if (resultsDiv) {
-        resultsDiv.innerHTML = '<div class="search-error" style="color: red; margin-top: 0.5em;">Sorry, search failed. Please try again.</div>';
+        resultsDiv.textContent = '';
+        const err = document.createElement('div');
+        err.className = 'search-error';
+        err.style.color = 'red';
+        err.style.marginTop = '0.5em';
+        err.textContent = 'Sorry, search failed. Please try again.';
+        resultsDiv.appendChild(err);
       }
       console.error("Search failed", e);
     }
