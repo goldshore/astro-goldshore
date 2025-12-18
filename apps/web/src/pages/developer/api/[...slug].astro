@@ -13,13 +13,12 @@ const { slug } = Astro.params;
 // actually Astro.params.slug is a string for [...slug].
 const endpointId = slug || '';
 
-const paths = Object.entries(openapi.paths || {});
 ---
 
 <html>
   <body class="api-body">
 
-    <ApiSidebar version={version} paths={paths} />
+    <ApiSidebar openapi={openapi} />
 
     <main class="api-main">
       {endpointId
