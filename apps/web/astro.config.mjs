@@ -6,6 +6,7 @@ import { defineConfig } from "astro/config";
 export default defineConfig({
   output: "server",
   adapter: cloudflare(),
+  prefetch: true,
   integrations: [tailwind({
     applyBaseStyles: false,
     configFile: "../../tailwind.config.mjs"
