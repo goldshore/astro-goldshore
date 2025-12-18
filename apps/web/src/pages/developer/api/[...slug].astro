@@ -8,15 +8,17 @@ import ApiEndpoint from '../../../components/ApiEndpoint.astro';
 // or use a placeholder if we are depending on runtime fetch which might be tricky in SSG/SSR mixed modes.
 // For now, let's assume we can fetch or require it.
 
-// NOTE: Ideally this would come from a shared package or a fetched URL.
-// Since we don't have the file 'apps/web/src/data/v1.json' in the file list I saw earlier,
-// I will attempt to fetch it or define a mock if it fails.
-// However, the error log showed the file had `const version = 'v1'` inside a `<style>` block.
-// I am rewriting this file to be a proper Astro component.
+const { slug } = Astro.params;
+// Handle slug as array or string depending on Astro version/config, usually string for [...slug] but params might be parsed.
+// actually Astro.params.slug is a string for [...slug].
+const endpointId = slug || '';
+
+---
 
 // We need to define getStaticPaths if we are in static mode, or use SSR.
 // The config says `output: 'server'`, so we don't need getStaticPaths.
 
+    <ApiSidebar openapi={openapi} />
 const { slug } = Astro.params;
 const endpoint = slug || '';
 
