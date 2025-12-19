@@ -1,5 +1,4 @@
-name: SENTINEL (PR)
-
+name: Sentinel PR Scan
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -7,17 +6,15 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
-  sentinel-pr-check:
-    name: Run SENTINEL guardrails
+  sentinel-pr:
     runs-on: ubuntu-latest
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
@@ -33,53 +30,8 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Run Sentinel (auto-fix)
-        run: |
-          git config user.name "Jules Sentinel"
-          git config user.email "jules@goldshore.ai"
-          node ./.Jules/run-sentinel.jsagent --mode=pr --fix || true
+      # No pnpm install here to allow running on broken lockfiles.
+      # Sentinel script is dependency-free (standard libs only).
 
-          if [[ -n $(git status --porcelain) ]]; then
-            git add .
-            git commit -m "chore: Sentinel auto-fixes"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
-
-      - name: Run Sentinel (verification)
-        run: node ./.Jules/run-sentinel.jsagent --mode=pr
-
-      - name: Upload Sentinel report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .Jules/sentinel-report.json
-
-      - name: Annotate PR with Sentinel summary
-        if: always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const reportPath = '.Jules/sentinel-report.json';
-            if (!fs.existsSync(reportPath)) {
-              core.info('No Sentinel report found to annotate.');
-              return;
-            }
-
-            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-            const lines = [
-              `Mode: ${report.mode}`,
-              `Auto-fix: ${report.autoFix}`,
-              `Branch: ${report.branch}`,
-              `Fixed: ${report.fixedFiles?.join(', ') || 'none'}`,
-              `High-conflict touches: ${report.highConflictTouches?.join(', ') || 'none'}`,
-              report.needsCodex?.length ? `Needs Codex: ${report.needsCodex.length}` : 'Needs Codex: none'
-            ];
-
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `🛡️ Sentinel report\n\n${lines.join('\n')}`
-            });
+      - name: Run Sentinel Check
+        run: node .Jules/run-sentinel.jsagent --mode=pr
