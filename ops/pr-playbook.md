@@ -11,16 +11,16 @@ This playbook defines how to handle:
 
 ## 0. Principles
 
-1. **Lockfiles are never hand-edited.**  
+1. **Lockfiles are never hand-edited.**
    If `pnpm-lock.yaml` has conflicts, we delete and regenerate it.
 
-2. **`main` is the source of truth.**  
+2. **`main` is the source of truth.**
    Conflicted PR branches sync to `origin/main` first, then are fixed.
 
-3. **High-impact files come first.**  
+3. **High-impact files come first.**
    PRs touching infra, workers, or layouts get resolved before copy-only or minor tweaks.
 
-4. **Automate where possible.**  
+4. **Automate where possible.**
    Use `gh` and (later) Jules bot/Actions to clean branches, not manual gymnastics.
 
 ---
