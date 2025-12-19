@@ -30,7 +30,11 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
         </a>
         <nav class="gs-nav" aria-label="Primary">
           {navLinks.map((link) => (
-            <a href={link.href} aria-current={currentPath === link.href ? 'page' : undefined}>
+            <a
+              href={link.href}
+              aria-current={currentPath === link.href ? 'page' : undefined}
+              data-astro-prefetch
+            >
               {link.label}
             </a>
           ))}
@@ -47,13 +51,13 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
           <div class="gs-grid columns-2">
             <div>
               <div class="gs-logo" style="gap: var(--gs-space-2);">
-                <img src={logo} alt="GoldShore logo" width="32" height="32" />
+                <img src={logo} alt="GoldShore logo" width="32" height="32" loading="lazy" decoding="async" />
                 <span>GoldShore AI</span>
               </div>
               <p>Applied intelligence, resilient infrastructure, and responsive operations.</p>
             </div>
             <div class="gs-grid columns-2" style="gap: var(--gs-space-2);">
-              <div class="gs-nav" style="flex-direction: column; align-items: flex-start; gap: var(--gs-space-2);">
+              <div class="gs-nav gs-nav--vertical">
                 <strong>Company</strong>
                 <a href="/about">About</a>
                 <a href="/team">Team</a>
