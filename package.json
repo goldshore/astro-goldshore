@@ -9,7 +9,8 @@
     "preview": "pnpm -r --filter=\"./apps/*\" preview",
     "deploy": "pnpm -r --filter=\"./apps/*\" deploy",
     "lint": "eslint . --ext .ts,.tsx,.astro",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "check:conflicts": "bash scripts/check-conflicts.sh"
   },
   "devDependencies": {
     "@astrojs/cloudflare": "^12.6.11",
