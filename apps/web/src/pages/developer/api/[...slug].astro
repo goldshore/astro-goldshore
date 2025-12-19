@@ -1,48 +1,40 @@
 ---
+import Layout from '../../../layouts/BaseLayout.astro';
 import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
-// Import the data directly
-// @ts-ignore
-import openapiData from '../../../data/v1.json';
-
-const version = 'v1';
-const openapi = openapiData;
 
 const { slug } = Astro.params;
-// Handle slug as array or string depending on Astro version/config, usually string for [...slug] but params might be parsed.
-// actually Astro.params.slug is a string for [...slug].
-const endpointId = slug || '';
+const endpoint = slug || '';
 
-const paths = Object.entries(openapi.paths || {});
+// Mock data or fetch logic here.
+// In a real scenario, we might import this from `@goldshore/api-spec` or similar.
+const openapi = {
+  info: { title: 'GoldShore API', version: '1.0.0' },
+  paths: {
+    '/system/status': {
+      get: { summary: 'Get System Status', description: 'Returns the health of the system.' }
+    }
+  }
+};
 ---
 
-<html>
-  <body class="api-body">
-
-    <ApiSidebar version={version} paths={paths} />
-
+<Layout title="API Reference">
+  <div class="api-container">
+    <ApiSidebar openapi={openapi} />
     <main class="api-main">
-      {endpointId
-        ? <ApiEndpoint openapi={openapi} endpointId={endpointId} />
-        : <h1>API Reference — {version}</h1>
-      }
+      <ApiEndpoint openapi={openapi} endpoint={endpoint} />
     </main>
-
-  </body>
-</html>
+  </div>
+</Layout>
 
 <style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
+  .api-container {
     display: flex;
-    background: #020617;
-    color: #f8fafc;
+    min-height: 100vh;
+    background: var(--color-surface-1);
   }
   .api-main {
     flex: 1;
-    padding: 2rem;
-    height: 100vh;
-    overflow-y: auto;
+    padding: var(--space-4);
   }
 </style>
