@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   sentinel-pr:
@@ -29,8 +30,8 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      # Note: We do NOT install dependencies here because a broken lockfile
-      # is a common conflict Sentinel needs to fix. Sentinel is dependency-free.
+      # No pnpm install here to allow running on broken lockfiles.
+      # Sentinel script is dependency-free (standard libs only).
 
       - name: Run Sentinel Check
         run: node .Jules/run-sentinel.jsagent --mode=pr
