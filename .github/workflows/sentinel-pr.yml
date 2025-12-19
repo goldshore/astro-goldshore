@@ -1,22 +1,20 @@
-name: SENTINEL (PR)
-
+name: Sentinel PR Scan
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: write
-  pull-requests: read
+  pull-requests: write
+  issues: write
 
 jobs:
-  sentinel-pr-check:
-    name: Run SENTINEL guardrails
+  sentinel-pr:
     runs-on: ubuntu-latest
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
@@ -26,33 +24,14 @@ jobs:
         with:
           version: 8
 
-        uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.ref }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'pnpm'
 
-      - name: Run Sentinel (Auto-Fix)
-        run: |
-          git config user.name "Jules Sentinel"
-          git config user.email "jules@goldshore.ai"
-          node ./.Jules/run-sentinel.jsagent --mode=pr --fix
+      # No pnpm install here to allow running on broken lockfiles.
+      # Sentinel script is dependency-free (standard libs only).
 
-          # Check for changes and push
-          if [[ -n $(git status --porcelain) ]]; then
-            git add .
-            git commit -m "chore: Sentinel auto-fixes"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
-      - name: Run SENTINEL (PR Mode)
-        run: node ./.Jules/run-sentinel.jsagent --mode=pr
-      - name: Upload Sentinel Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .Jules/sentinel-report.json
+      - name: Run Sentinel Check
+        run: node .Jules/run-sentinel.jsagent --mode=pr
