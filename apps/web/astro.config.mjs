@@ -7,6 +7,7 @@ export default defineConfig({
   output: 'server',
   prefetch: true,
   adapter: cloudflare(),
+  prefetch: true,
   integrations: [tailwind({
     applyBaseStyles: false,
     configFile: "../../tailwind.config.mjs"
