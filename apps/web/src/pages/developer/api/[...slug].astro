@@ -11,15 +11,6 @@ import ApiEndpoint from '../../../components/ApiEndpoint.astro';
 const { slug } = Astro.params;
 // Handle slug as array or string depending on Astro version/config, usually string for [...slug] but params might be parsed.
 // actually Astro.params.slug is a string for [...slug].
-const endpointId = slug || '';
-
----
-
-// We need to define getStaticPaths if we are in static mode, or use SSR.
-// The config says `output: 'server'`, so we don't need getStaticPaths.
-
-    <ApiSidebar openapi={openapi} />
-const { slug } = Astro.params;
 const endpoint = slug || '';
 
 // Mock data or fetch logic here.
