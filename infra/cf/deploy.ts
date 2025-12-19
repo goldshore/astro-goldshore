@@ -119,7 +119,7 @@ function redactSensitive(err: unknown): string {
   return str;
 }
 
-main().catch(e => { 
-  console.error(redactSensitive(e)); 
-  process.exit(1); 
+main().catch(e => {
+  console.error(redactSensitive(e));
+  process.exit(1);
 });
