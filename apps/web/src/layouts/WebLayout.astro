@@ -34,7 +34,6 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
               href={link.href}
               aria-current={currentPath === link.href ? 'page' : undefined}
               data-astro-prefetch
-              /* Optimization: Prefetch these critical routes for instant navigation */
             >
               {link.label}
             </a>
