@@ -1,17 +1,16 @@
-name: SENTINEL (Nightly)
-
+name: Sentinel Nightly Scan
 on:
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 2 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
-  sentinel-nightly:
-    name: Nightly SENTINEL scan
+  sentinel:
     runs-on: ubuntu-latest
     env:
       JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
@@ -19,6 +18,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@3df4d485d8ce6d2b61b8d12e8f44cdfffbea301e
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -71,3 +73,15 @@ jobs:
             core.summary.addRaw(`<br/>Failures: ${failed}`);
             core.summary.addRaw('<br/><br/>Report saved as artifact: sentinel-report-nightly');
             await core.summary.write();
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Sentinel
+        run: node .Jules/run-sentinel.jsagent --mode=sweep
+
+      - name: Upload Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .jules/guard/report.json

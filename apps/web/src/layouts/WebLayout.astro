@@ -30,7 +30,12 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
         </a>
         <nav class="gs-nav" aria-label="Primary">
           {navLinks.map((link) => (
-            <a href={link.href} aria-current={currentPath === link.href ? 'page' : undefined}>
+            <a
+              href={link.href}
+              aria-current={currentPath === link.href ? 'page' : undefined}
+              data-astro-prefetch
+              /* Optimization: Prefetch these critical routes for instant navigation */
+            >
               {link.label}
             </a>
           ))}

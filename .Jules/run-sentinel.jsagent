@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const https = require('https');
 
 // --- Configuration ---
 const ARGS = process.argv.slice(2);
@@ -30,11 +31,13 @@ const CONFIG = {
     'astro.config.mjs'
   ]
 };
+const REPORT_FILE = '.jules/guard/report.json';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 // --- Utilities ---
 function log(msg, type = 'info') {
   const icon = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', action: '🔧' }[type] || '';
-  console.log(`${icon}  ${msg}`);
+  console.log(`${icon} [${new Date().toISOString().split('T')[1].split('.')[0]}] ${msg}`);
 }
 
 function run(cmd, { ignoreError = false, inherit = false } = {}) {
@@ -66,7 +69,12 @@ function getBranchName() {
   }
 }
 
-// --- Fixers ---
+function sanitizeBranch(branch) {
+  if (!branch || !/^[a-zA-Z0-9_\-\/.]+$/.test(branch)) {
+      throw new Error(`Invalid branch name: ${branch}`);
+  }
+  return branch;
+}
 
 function getLatestShaForAction(actionRef, tag) {
   try {
@@ -198,7 +206,23 @@ function collectConflictFiles() {
   return conflicts ? conflicts.split('\n').filter(Boolean) : [];
 }
 
-// --- Workflows ---
+        // 4. Dead TODOs
+        if (modified || content.includes('TODO')) {
+            const newContent = content.replace(/(return\s*.*;)\s*(\/\/|\/\*)\s*TODO[\s\S]*?(\n|$)/g, '$1\n');
+            if (newContent !== content) {
+                content = newContent;
+                modified = true;
+            }
+        }
+
+        // 5. Missing Imports Check & Creation
+        const importRegex = /import\s+.*?\s+from\s+['"](\..*?)['"]/g;
+        let match;
+        while ((match = importRegex.exec(content)) !== null) {
+            const importPath = match[1];
+            try {
+                const dir = path.dirname(file);
+                const resolvedPathWithoutExt = path.resolve(dir, importPath);
 
 function buildBaseReport() {
   return {
@@ -341,7 +365,6 @@ async function runSweep() {
   log(`Sweep complete. Report written to ${REPORT_FILE}`, 'success');
 }
 
-// --- Entry Point ---
 (async () => {
   try {
     if (MODE === 'SWEEP') {

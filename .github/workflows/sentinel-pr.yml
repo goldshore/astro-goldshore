@@ -1,5 +1,4 @@
-name: SENTINEL (PR)
-
+name: Sentinel PR Scan
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -7,13 +6,12 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
-  sentinel-pr-check:
-    name: Run SENTINEL guardrails
+  sentinel-pr:
     runs-on: ubuntu-latest
     env:
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
@@ -83,3 +81,8 @@ jobs:
               repo: context.repo.repo,
               body: `🛡️ Sentinel report\n\n${lines.join('\n')}`
             });
+      # No pnpm install here to allow running on broken lockfiles.
+      # Sentinel script is dependency-free (standard libs only).
+
+      - name: Run Sentinel Check
+        run: node .Jules/run-sentinel.jsagent --mode=pr
