@@ -3,14 +3,7 @@ import Layout from '../../../layouts/BaseLayout.astro';
 import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
 
-// Import the data directly for build time if possible, or fetch it.
-// Given the previous error, let's try to load it from a local file if available,
-// or use a placeholder if we are depending on runtime fetch which might be tricky in SSG/SSR mixed modes.
-// For now, let's assume we can fetch or require it.
-
 const { slug } = Astro.params;
-// Handle slug as array or string depending on Astro version/config, usually string for [...slug] but params might be parsed.
-// actually Astro.params.slug is a string for [...slug].
 const endpoint = slug || '';
 
 // Mock data or fetch logic here.

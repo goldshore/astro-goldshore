@@ -5,6 +5,7 @@ import tailwind from '@astrojs/tailwind';
 export default defineConfig({
   srcDir: './src',
   output: 'server',
+  prefetch: true,
   adapter: cloudflare(),
   integrations: [tailwind({
     applyBaseStyles: false,
