@@ -205,3 +205,4 @@ dist
 apps/web/src/content/openapi/*.json
 apps/web/openapi/*.json
 apps/web/openapi/openapi/*.json
+.turbo/
