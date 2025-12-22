@@ -329,6 +329,7 @@ async function runPRMode() {
     writeReport(report);
 }
 
+// --- Main ---
 (async () => {
     try {
         if (MODE === 'SWEEP') {
