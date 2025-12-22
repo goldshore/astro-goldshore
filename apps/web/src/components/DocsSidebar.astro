@@ -6,28 +6,49 @@ const pages = await getCollection('docs');
 
 // Sort by optional "order" key
 pages.sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999));
+
+function getHref(slug: string) {
+  return slug === 'index' ? '/developer/docs' : `/developer/docs/${slug}`;
+}
 ---
 
-<aside class="sidebar">
-  <h3>Documentation</h3>
-
-  {
-    pages.map((p) => {
-      const active = currentSlug === p.slug;
-      const href = p.slug === 'index' ? '/developer/docs' : `/developer/docs/${p.slug}`;
-      return (
-        <div class="item">
-          <a href={href} class:list={[{ active }]}>
-            {p.data.title}
-          </a>
-        </div>
-      );
-    })
-  }
+<aside class="gs-card docs-sidebar" aria-label="Documentation navigation">
+  <h3 class="section-title"><span>◎</span>Documentation</h3>
+  <ul class="docs-nav">
+    {pages.map((p) => (
+      <li>
+        <a
+          href={getHref(p.slug)}
+          class={currentSlug === p.slug ? 'active' : ''}
+        >
+          {p.data.title}
+        </a>
+      </li>
+    ))}
+  </ul>
 </aside>
 
 <style>
-  .sidebar a.active {
-    color: #22d3ee;
+  .docs-sidebar { position: sticky; top: var(--gs-space-6); align-self: start; }
+  .docs-nav { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: var(--gs-space-2); }
+  .docs-nav a { color: var(--gs-color-subtle); text-decoration: none; transition: color 0.2s ease; }
+  .docs-nav a:hover { color: var(--gs-color-text); }
+  .docs-nav a.active { color: #22d3ee; }
+
+  .section-title {
+    margin-top: 0;
+    margin-bottom: var(--gs-space-4);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--gs-color-subtle);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 900px) {
+    .docs-sidebar { position: relative; top: 0; }
   }
 </style>
