@@ -6,13 +6,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  issues: write
 
 jobs:
   sentinel-pr:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,26 +17,36 @@ jobs:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Sentinel (PR Mode)
-        run: node .Jules/run-sentinel.jsagent --mode=pr
+      - name: Run Sentinel (auto-fix)
+        run: |
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          # Run in PR mode to fix local files
+          node ./.Jules/run-sentinel.jsagent --mode=pr
 
-      - name: Upload Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .jules/guard/report.json
+          # Commit and Push if changes exist
+          if [[ -n $(git status --porcelain) ]]; then
+            git add .
+            git commit -m "Sentinel: resolve mechanical conflicts"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Build
+        run: |
+          pnpm lint
+          pnpm build

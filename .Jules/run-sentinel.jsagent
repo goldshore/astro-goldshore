@@ -2,8 +2,8 @@
 /**
  * .Jules/run-sentinel.jsagent
  *
- * Sentinel: Automated Conflict Resolution & Hygiene Agent
- * Runs nightly (Sweep) or on PRs to resolve mechanical conflicts and enforce standards.
+ * Sentinel: Automated Conflict Resolution & Hygiene Agent.
+ * Runs on schedule (nightly) or PRs to keep the repo healthy.
  */
 
 const fs = require('fs');
@@ -12,62 +12,48 @@ const { execSync } = require('child_process');
 const https = require('https');
 
 // --- Configuration ---
-const ARGS = process.argv.slice(2);
-const MODE = ARGS.includes('--mode=pr') ? 'PR' : 'SWEEP'; // Default to SWEEP if not PR
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY; // e.g., "owner/repo"
+const GITHUB_REPOSITORY = process.env.GITHUB_REPOSITORY; // e.g. owner/repo
+const ARGS = process.argv.slice(2);
+const MODE = ARGS.includes('--mode=sweep') ? 'SWEEP' : 'PR'; // 'PR' scans current context, 'SWEEP' scans all open PRs
 const REPORT_FILE = '.jules/guard/report.json';
 
 const CONFIG = {
   ignoreDirs: ['node_modules', '.git', 'dist', '.turbo', '.astro', '.Jules', 'ops'],
-  extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json', '.mjs'],
+  extensions: ['.js', '.ts', '.astro', '.yml', '.yaml', '.json', '.mjs']
 };
 
-// --- Utilities ---
+// --- Logger ---
 function log(msg, type = 'info') {
   const icon = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', action: '🔧' }[type] || '';
   console.log(`${icon} [${new Date().toISOString().split('T')[1].split('.')[0]}] ${msg}`);
 }
 
+// --- Shell Wrapper ---
 function run(cmd, { ignoreError = false, inherit = false, cwd = process.cwd() } = {}) {
   try {
     return execSync(cmd, { stdio: inherit ? 'inherit' : 'pipe', encoding: 'utf-8', cwd }).trim();
   } catch (e) {
     if (!ignoreError) {
-      console.error(`Failed: ${cmd}`);
-      console.error(e.message);
+      log(`Failed: ${cmd}`, 'error');
+      if (e.stderr) console.error(e.stderr);
     }
     throw e;
   }
 }
 
-function git(args, ignoreError = false) {
-  return run(`git ${args}`, { ignoreError });
-}
-
-function writeReport(report) {
-  try {
-    const dir = path.dirname(REPORT_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    // Merge with existing if needed, but usually we overwrite for a new run
-    fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
-  } catch (e) {
-    log(`Failed to write report: ${e.message}`, 'error');
-  }
-}
-
-async function githubRequest(method, path, body = null) {
-  if (!GITHUB_TOKEN) throw new Error('GITHUB_TOKEN is required');
-  if (!GITHUB_REPOSITORY) throw new Error('GITHUB_REPOSITORY is required');
-
+// --- GitHub API ---
+async function githubRequest(path, method = 'GET', body = null) {
   return new Promise((resolve, reject) => {
+    if (!GITHUB_TOKEN) return reject(new Error('GITHUB_TOKEN not set'));
+
     const options = {
       hostname: 'api.github.com',
-      path: path,
-      method: method,
+      path,
+      method,
       headers: {
-        'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'User-Agent': 'Jules-Sentinel',
+        'Authorization': `token ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       }
@@ -75,13 +61,13 @@ async function githubRequest(method, path, body = null) {
 
     const req = https.request(options, (res) => {
       let data = '';
-      res.on('data', chunk => data += chunk);
+      res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           try {
             resolve(JSON.parse(data));
           } catch (e) {
-             resolve(data);
+            resolve(data);
           }
         } else {
           reject(new Error(`GitHub API Error: ${res.statusCode} ${data}`));
@@ -95,415 +81,336 @@ async function githubRequest(method, path, body = null) {
   });
 }
 
-// --- GitHub Operations ---
+// --- Core Logic ---
 
-async function fetchOpenPRs() {
-  log(`Fetching open PRs for ${GITHUB_REPOSITORY}...`);
-  try {
-    const prs = await githubRequest('GET', `/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100`);
-    return prs;
-  } catch (e) {
-    log(`Failed to fetch PRs: ${e.message}`, 'error');
-    return [];
-  }
+function setupGitIdentity() {
+    try {
+        run('git config user.name "Jules Sentinel"');
+        run('git config user.email "jules@goldshore.ai"');
+    } catch (e) {
+        log('Failed to configure git identity', 'warning');
+    }
 }
 
-async function getPRDetails(number) {
+function getLatestShaForAction(actionRef, tag) {
     try {
-        return await githubRequest('GET', `/repos/${GITHUB_REPOSITORY}/pulls/${number}`);
+        // Use git ls-remote to find the SHA for the tag
+        // actionRef is likely "owner/repo" or "owner/repo/path" (but GH actions usually owner/repo)
+        // e.g. actions/checkout
+        const remoteUrl = `https://github.com/${actionRef}`;
+        // Resolve the tag to a commit SHA
+        // tag is usually v3, v4 etc.
+        // We look for refs/tags/v4^{} (peeled) or refs/tags/v4
+        const output = run(`git ls-remote ${remoteUrl} refs/tags/${tag}*`, { ignoreError: true });
+        if (!output) return null;
+
+        // Output format: SHA\tref
+        // We want the SHA.
+        // If there are multiple (v4.0, v4.1), pick the last one?
+        // Usually tags are specific. If we ask for 'v4', we might get v4, v4.0, v4.1.
+        // If the user specified v4, we usually want the floating tag 'v4' SHA.
+        // But pinning means we want the COMMIT SHA that 'v4' points to.
+
+        const lines = output.split('\n');
+        // Look for exact match first
+        const exact = lines.find(l => l.endsWith(`refs/tags/${tag}`));
+        if (exact) return exact.split('\t')[0];
+
+        // Or if it's peeled (annotated tag)
+        const peeled = lines.find(l => l.endsWith(`refs/tags/${tag}^{}`));
+        if (peeled) return peeled.split('\t')[0];
+
+        return lines[0].split('\t')[0];
     } catch (e) {
-        log(`Failed to get PR details for #${number}: ${e.message}`, 'error');
         return null;
     }
 }
 
-async function commentOnPR(number, body) {
-  try {
-    await githubRequest('POST', `/repos/${GITHUB_REPOSITORY}/issues/${number}/comments`, { body });
-    log(`Commented on PR #${number}`, 'success');
-  } catch (e) {
-    log(`Failed to comment on PR #${number}: ${e.message}`, 'error');
-  }
+// 1. Fetch Open PRs
+async function fetchOpenPRs() {
+  log('Fetching open PRs...', 'info');
+  const prs = await githubRequest(`/repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100`);
+  return prs.filter(pr => !pr.draft);
 }
 
-async function addLabel(number, labels) {
-    try {
-        await githubRequest('POST', `/repos/${GITHUB_REPOSITORY}/issues/${number}/labels`, { labels });
-    } catch (e) {
-        log(`Failed to label PR #${number}: ${e.message}`, 'error');
-    }
-}
-
-// --- Conflict Resolution Logic ---
-
-function getLatestShaForAction(actionRef, tag) {
-  try {
-    // Basic heuristics or git ls-remote.
-    // For specific actions, we might hardcode or lookup.
-    // Using git ls-remote is reliable but slow.
-    const remote = `https://github.com/${actionRef}`;
-    const output = git(`ls-remote ${remote} ${tag} refs/tags/${tag}*`, true);
-    if (output) {
-      return output.split('\t')[0];
-    }
-  } catch (e) {}
-  return null;
-}
-
+// 2. Conflict Handling
 function resolveMechanicalConflicts(dir = '.') {
-  let fixed = [];
-  const files = run(`find ${dir} -type f -not -path "*/node_modules/*" -not -path "*/.git/*"`).split('\n').filter(Boolean);
+  log(`Scanning for mechanical conflicts in ${dir}...`, 'action');
+  let fixedCount = 0;
+
+  // 1. Lockfile
+  if (fs.existsSync(path.join(dir, 'pnpm-lock.yaml'))) {
+      const content = fs.readFileSync(path.join(dir, 'pnpm-lock.yaml'), 'utf8');
+      if (content.includes('<<<<<<<')) {
+          log('Lockfile conflict detected. Regenerating...', 'action');
+          fs.unlinkSync(path.join(dir, 'pnpm-lock.yaml'));
+          if (fs.existsSync(path.join(dir, 'node_modules'))) {
+              fs.rmSync(path.join(dir, 'node_modules'), { recursive: true, force: true });
+          }
+          run('pnpm install', { inherit: true, cwd: dir });
+          fixedCount++;
+      }
+  }
+
+  // 2. Scan Files
+  const files = run(`find ${dir} -type f -not -path "*/node_modules/*" -not -path "*/.git/*"`)
+      .split('\n').filter(Boolean);
 
   for (const file of files) {
-    let content = '';
-    try {
-      content = fs.readFileSync(file, 'utf-8');
-    } catch (e) { continue; }
+      if (!CONFIG.extensions.some(ext => file.endsWith(ext))) continue;
 
-    let originalContent = content;
-    let modified = false;
+      let content = '';
+      try { content = fs.readFileSync(file, 'utf8'); } catch (e) { continue; }
+      let modified = false;
 
-    // 1. Unpinned GitHub Action Tags
-    if (file.endsWith('.yml') || file.endsWith('.yaml')) {
-      const regex = /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g;
-      content = content.replace(regex, (match, action, tag) => {
-        const sha = getLatestShaForAction(action, tag);
-        if (sha) {
+      // A. Unpinned GitHub Action Tags
+      if (file.endsWith('.yml') || file.endsWith('.yaml')) {
+          const regex = /uses:\s+([a-zA-Z0-9_\-\/]+)@(v[0-9]+(\.[0-9]+)*)/g;
+          let match;
+          // We need to loop and replace.
+          const matches = [];
+          while ((match = regex.exec(content)) !== null) {
+              matches.push({ full: match[0], action: match[1], tag: match[2] });
+          }
+
+          if (matches.length > 0) {
+              for (const m of matches) {
+                  const sha = getLatestShaForAction(m.action, m.tag);
+                  if (sha) {
+                       log(`Pinning ${m.action}@${m.tag} -> ${sha}`, 'action');
+                       content = content.replace(m.full, `uses: ${m.action}@${sha} # ${m.tag}`);
+                       modified = true;
+                  }
+              }
+          }
+      }
+
+      // B. Multiple Astro Component Definitions / HTML Duplication
+      if (file.endsWith('.astro')) {
+          // Frontmatter Duplication
+          const frontmatterRegex = /^---\s*[\s\S]*?\s*---/gm;
+          const matches = content.match(frontmatterRegex);
+          if (matches && matches.length > 1) {
+              log(`Fixing duplicate frontmatter in ${file}`, 'action');
+              const firstFM = matches[0];
+              let newContent = content;
+              for (let i = 1; i < matches.length; i++) {
+                  newContent = newContent.replace(matches[i], '');
+              }
+              content = newContent;
+              modified = true;
+          }
+
+          // HTML Duplication Heuristic (if <html> tag appears more than once)
+          // Astro pages might have <html> ... </html>
+          const htmlMatches = content.match(/<html/g);
+          if (htmlMatches && htmlMatches.length > 1) {
+              log(`Duplicate HTML structure detected in ${file}`, 'action');
+              // Heuristic: Keep the first occurrence of <html>...</html>?
+              // Or split by </html> and keep first part?
+              // This is dangerous but requested.
+              // We'll search for the first </html> and truncate everything after?
+              // No, that deletes valid content if multiple components.
+              // But for a PAGE file, there should only be one <html>.
+              // If it's a component, no <html>.
+              // Let's assume this check targets pages.
+              const endHtmlIndex = content.indexOf('</html>');
+              if (endHtmlIndex !== -1) {
+                   const secondEnd = content.indexOf('</html>', endHtmlIndex + 1);
+                   if (secondEnd !== -1) {
+                       // We have duplicate blocks.
+                       // We will try to keep the first block.
+                       // Find the start of the SECOND <html ...
+                       const secondStart = content.indexOf('<html', endHtmlIndex);
+                       if (secondStart !== -1) {
+                           content = content.substring(0, secondStart); // Dangerous cutoff
+                           modified = true;
+                       }
+                   }
+              }
+          }
+      }
+
+      // C. Missing Module Imports
+      // "If a conflict shows import ... from './routes/user' ... create the module"
+      // We look for conflict markers with imports?
+      // Or just missing imports generally?
+      // We only fix files, we don't know if import is missing unless we verify.
+      // But if we see specific patterns...
+      // Let's implement a heuristic: check if imports point to non-existent files.
+      // Only for relative imports.
+      if (file.endsWith('.js') || file.endsWith('.ts') || file.endsWith('.astro')) {
+          const importRegex = /import\s+.*?from\s+['"](\.[^'"]+)['"]/g;
+          let m;
+          while ((m = importRegex.exec(content)) !== null) {
+              const importPath = m[1];
+              const dir = path.dirname(file);
+              // Resolve extension... simplified check
+              let exists = false;
+              const possibleExts = ['.ts', '.js', '.astro', '.tsx', '.jsx', '/index.ts', '/index.js', '.json'];
+              const base = path.resolve(dir, importPath);
+              if (fs.existsSync(base)) exists = true;
+              else {
+                  for (const ext of possibleExts) {
+                      if (fs.existsSync(base + ext)) { exists = true; break; }
+                  }
+              }
+
+              if (!exists) {
+                  // "create the module"
+                  log(`Missing module detected: ${importPath} in ${file}`, 'action');
+                  // We create a dummy file to satisfy build?
+                  // Try to guess type from extension of parent
+                  const newFile = base + (path.extname(base) || '.ts');
+                  // If folder, use index.ts
+                  // This is very guessy.
+                  // Safe fallback: Create a TS file with "export {};"
+                  // Only if we are sure.
+                  try {
+                      // Ensure dir exists
+                      fs.mkdirSync(path.dirname(newFile), { recursive: true });
+                      fs.writeFileSync(newFile, 'export {}; // Sentinel auto-created missing module\n');
+                      log(`Created missing module: ${newFile}`, 'action');
+                  } catch (e) {
+                      log(`Failed to create missing module ${newFile}: ${e.message}`, 'error');
+                  }
+              }
+          }
+      }
+
+      // D. Missing Env Type
+      if ((file.endsWith('.ts') || file.endsWith('.js')) && content.includes('Env') && !content.includes('interface Env') && !content.includes('import type { Env }') && !content.includes('import { Env }')) {
+             if (content.includes('fetch(') || content.includes('worker')) {
+                 log(`Injecting missing Env type in ${file}`, 'action');
+                 content = `import type { Env } from './worker-configuration';\n` + content;
+                 modified = true;
+             }
+      }
+
+      // E. Dead TODOs
+      const todoRegex = /return\s+[\s\S]*?(\/\/|\/\*)\s*TODO[\s\S]*?(\n|$)/g;
+      if (todoRegex.test(content)) {
+          log(`Removing dead TODO in ${file}`, 'action');
+          content = content.replace(todoRegex, (match) => {
+              return match.split('//')[0].split('/*')[0] + '\n';
+          });
           modified = true;
-          return `uses: ${action}@${sha} # ${tag}`;
-        }
-        return match;
-      });
-      if (modified && content !== originalContent) fixed.push(`Pinned actions in ${path.basename(file)}`);
-    }
+      }
 
-    // 2. Dead TODOs
-    if (content.includes('TODO')) {
-        const todoRegex = /(return\s*.*;)\s*(\/\/|\/\*)\s*TODO[\s\S]*?(\n|$)/g;
-        const newContent = content.replace(todoRegex, '$1\n');
-        if (newContent !== content) {
-            content = newContent;
-            modified = true;
-            fixed.push(`Removed dead TODO in ${path.basename(file)}`);
-        }
-    }
-
-    // 3. Duplicate Astro Frontmatter
-    if (file.endsWith('.astro')) {
-        // Case A: Markers present - Try to resolve generic Frontmatter conflict by keeping 'ours' (HEAD)
-        if (content.includes('<<<<')) {
-             // Regex to find conflict blocks
-             // <<<<<<< ... \n (Ours) \n ======= \n (Theirs) \n >>>>>>> ...
-             content = content.replace(/<<<<<<<.*?\n([\s\S]*?)\n=======\s*[\n]([\s\S]*?)\n>>>>>>>.*?\n/g, (match, ours, theirs) => {
-                 // If both sides look like valid Astro frontmatter (start with ---), pick ours.
-                 if (ours.trim().startsWith('---') && theirs.trim().startsWith('---')) {
-                     modified = true;
-                     fixed.push(`Resolved Astro frontmatter conflict in ${path.basename(file)} (kept ours)`);
-                     return ours + '\n';
-                 }
-                 return match;
-             });
-        }
-
-        // Case B: No markers but duplicates (concatenation)
-        if (!content.includes('<<<<')) {
-            const lines = content.split('\n');
-            const separatorIndices = [];
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].trim() === '---') separatorIndices.push(i);
-            }
-
-            // A valid astro component usually has exactly 2 separators (start and end of frontmatter)
-            // If it has 4 or more, it's likely duplicated (concatenation).
-            if (separatorIndices.length >= 4 && separatorIndices[0] === 0) {
-                 // Heuristic: Keep the first component (up to the start of the second frontmatter)
-                 const cutOffIndex = separatorIndices[2]; // The 3rd separator starts the 2nd component
-                 const newContent = lines.slice(0, cutOffIndex).join('\n');
-
-                 if (newContent.length < content.length) {
-                     content = newContent;
-                     modified = true;
-                     fixed.push(`Removed duplicate Astro component content in ${path.basename(file)}`);
-                 }
-            }
-        }
-    }
-
-    // 4. Missing Imports
-    // Regex for import ... from 'X' where X is missing
-    const importRegex = /import\s+.*?\s+from\s+['"](\..*?)['"]/g;
-    let match;
-    while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1];
-        try {
-            const dirName = path.dirname(file);
-            // Check extensions
-            const extensions = ['.ts', '.js', '.tsx', '.jsx', '.astro', '.vue', '.svelte'];
-            let exists = false;
-            // Check exact or with ext
-            if (fs.existsSync(path.resolve(dirName, importPath))) exists = true;
-            else {
-                for (const ext of extensions) {
-                    if (fs.existsSync(path.resolve(dirName, importPath + ext))) {
-                        exists = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!exists) {
-                // Create module
-                const targetPath = path.resolve(dirName, importPath + '.ts'); // Default to ts
-                log(`Creating missing module: ${targetPath}`, 'action');
-                fs.writeFileSync(targetPath, 'export {};\n');
-                fixed.push(`Created missing module ${importPath}`);
-            }
-        } catch (e) {}
-    }
-
-    // 5. Missing Env Type
-    if (file.endsWith('.ts') && content.includes('Env') && !content.includes('type Env') && !content.includes('interface Env')) {
-         // Check if it's already imported
-         if (!content.includes('import type { Env }')) {
-             // Find root
-             let currentDir = path.dirname(path.resolve(file));
-             let rootDir = null;
-             while (path.dirname(currentDir) !== currentDir) {
-                 if (fs.existsSync(path.join(currentDir, 'pnpm-lock.yaml'))) {
-                     rootDir = currentDir;
-                     break;
-                 }
-                 currentDir = path.dirname(currentDir);
-             }
-
-             if (rootDir) {
-                 let relativePath = path.relative(path.dirname(file), path.join(rootDir, 'worker-configuration'));
-                 if (!relativePath.startsWith('.')) relativePath = './' + relativePath;
-
-                 if (content.includes('export default {')) {
-                     const importStmt = `import type { Env } from '${relativePath}';\n`;
-                     content = importStmt + content;
-                     modified = true;
-                     fixed.push(`Added Env import to ${path.basename(file)}`);
-                 }
-             }
-         }
-    }
-
-    if (modified) {
-      fs.writeFileSync(file, content);
-    }
+      if (modified) {
+          fs.writeFileSync(file, content);
+          fixedCount++;
+      }
   }
 
-  // Lockfile
-  if (fs.existsSync('pnpm-lock.yaml')) {
-      // If we are in a rebase/merge conflict state, pnpm-lock.yaml might be corrupt or marked.
-      // Easiest is to always regenerate if we suspect issues, or if we are in conflict mode.
-      // We will handle lockfile specifically in the rebase logic.
+  return fixedCount;
+}
+
+// 3. Process Single Branch
+async function processPR(pr) {
+  const branch = pr.head.ref;
+  log(`Processing PR #${pr.number}: ${branch}`, 'info');
+
+  try {
+      // 1. Checkout
+      run(`git fetch origin ${branch}`);
+      run(`git checkout ${branch}`);
+      setupGitIdentity();
+
+      // 2. Rebase/Merge
+      let conflict = false;
+      try {
+          run(`git fetch origin main`);
+          run(`git rebase origin/main`);
+      } catch (e) {
+          log(`Rebase failed for ${branch}. Falling back to merge...`, 'warning');
+          run(`git rebase --abort`, { ignoreError: true });
+          try {
+              run(`git merge origin/main`);
+          } catch (mergeErr) {
+              log(`Merge conflict detected in ${branch}. Attempting resolution...`, 'action');
+              conflict = true;
+          }
+      }
+
+      // 3. Resolve Conflicts
+      const fixed = resolveMechanicalConflicts();
+
+      // If we had conflicts or made fixes
+      if (conflict || fixed > 0) {
+          run(`git add -A`);
+          try {
+              run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+          } catch (e) {
+              log(`No changes to commit after resolution attempts.`, 'info');
+          }
+      }
+
+      // 4. Verify
+      log('Verifying build...', 'info');
+      try {
+          run('pnpm install');
+          run('pnpm lint');
+          run('pnpm build');
+      } catch (e) {
+          log(`Build/Lint failed for ${branch}. Reverting...`, 'error');
+          run(`git reset --hard origin/${branch}`); // Abort
+          await githubRequest(`/issues/${pr.number}/labels`, 'POST', { labels: ['needs-codex'] });
+          await commentOnPR(pr.number, `Sentinel failed to verify build/lint after attempting fixes. Marking for Codex review.`);
+          return;
+      }
+
+      // 5. Push
+      const localSha = run('git rev-parse HEAD');
+      const remoteSha = run(`git rev-parse origin/${branch}`);
+
+      if (localSha !== remoteSha) {
+          log(`Pushing fixes to ${branch}...`, 'action');
+          run(`git push --force-with-lease origin ${branch}`);
+          await commentOnPR(pr.number, `Sentinel resolved conflicts and verified build. 🛡️`);
+      } else {
+          log(`No changes needed for ${branch}.`, 'success');
+      }
+
+  } catch (e) {
+      log(`Critical failure processing ${branch}: ${e.message}`, 'error');
+      await githubRequest(`/issues/${pr.number}/labels`, 'POST', { labels: ['needs-codex'] });
   }
-
-  return [...new Set(fixed)];
 }
 
-function regenerateLockfile() {
-    log('Regenerating lockfile...', 'action');
-    try {
-        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
-        if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
-        run('pnpm install');
-        return true;
-    } catch (e) {
-        log(`Lockfile regeneration failed: ${e.message}`, 'error');
-        return false;
-    }
-}
-
-// --- Main Logic ---
-
-async function processBranch(branchName, prNumber) {
-    log(`Processing branch: ${branchName} (PR #${prNumber})`);
-
-    // 1. Checkout
-    try {
-        git(`fetch origin ${branchName}`);
-        git(`checkout ${branchName}`);
-        git(`pull origin ${branchName}`); // Ensure we have latest
-    } catch (e) {
-        log(`Failed to checkout ${branchName}`, 'error');
-        return;
-    }
-
-    // 2. Rebase/Merge
-    let method = 'rebase';
-    try {
-        git('fetch origin main');
-        git('rebase origin/main');
-    } catch (e) {
-        log('Rebase failed, attempting to resolve...', 'warning');
-
-        // Check conflicts
-        const status = git('status --porcelain');
-        if (status.includes('UU pnpm-lock.yaml') || (fs.existsSync('pnpm-lock.yaml') && fs.readFileSync('pnpm-lock.yaml', 'utf-8').includes('<<<<'))) {
-             if (regenerateLockfile()) {
-                 git('add pnpm-lock.yaml');
-             }
-        }
-
-        // Try to continue rebase?
-        // If rebase is stuck on other files, we might need to abort and try merge,
-        // as merge gives us conflict markers in files which we can parse/fix.
-        // But if we can just fix mechanical stuff now...
-
-        // Let's try to resolve mechanical conflicts in the conflicted state
-        const fixes = resolveMechanicalConflicts();
-        if (fixes.length > 0) {
-            git('add .');
-        }
-
-        try {
-            git('rebase --continue');
-        } catch (rebaseErr) {
-            log('Rebase continue failed. Aborting and trying merge strategy.', 'warning');
-            git('rebase --abort', true);
-            method = 'merge';
-
-            try {
-                git('merge origin/main');
-            } catch (mergeErr) {
-                // Merge failed, we have markers
-                log('Merge failed. Attempting to fix conflict markers.', 'warning');
-
-                if (regenerateLockfile()) {
-                    git('add pnpm-lock.yaml');
-                }
-
-                const mergeFixes = resolveMechanicalConflicts();
-                if (mergeFixes.length > 0) {
-                     git('add .');
-                }
-
-                // If anything is still unmerged, we fail
-                const remaining = git('diff --name-only --diff-filter=U', true);
-                if (remaining) {
-                    log(`Unresolved conflicts in: ${remaining}`, 'error');
-                    await addLabel(prNumber, ['needs-codex']);
-                    await commentOnPR(prNumber, `Sentinel could not auto-resolve conflicts in:\n${remaining}\n\nManual intervention or Codex required.`);
-                    return; // Give up
-                }
-
-                // If clean, commit the merge
-                git('commit --no-edit');
-            }
-        }
-    }
-
-    // 3. Resolve Mechanical (Post-merge/rebase cleanup)
-    const postFixes = resolveMechanicalConflicts();
-
-    // 4. Verify Build & Lint
-    try {
-        // run('pnpm install'); // Already done if regen lockfile, but good to ensure
-        run('pnpm lint', { ignoreError: false });
-        run('pnpm build', { ignoreError: false });
-    } catch (e) {
-        log('Build/Lint failed.', 'error');
-        // Revert? Or just label?
-        // Instructions: "revert the automated changes and label"
-        // Since we might have rebased/merged, reverting is tricky.
-        // We just won't push.
-        await addLabel(prNumber, ['needs-codex']);
-        await commentOnPR(prNumber, `Sentinel auto-fixes failed build/lint verification.`);
-        git('reset --hard origin/' + branchName); // Reset to original state
-        return;
-    }
-
-    // 5. Push
-    try {
-        git(`push --force-with-lease origin ${branchName}`);
-        log(`Pushed fixes to ${branchName}`, 'success');
-
-        const summary = [
-            `### 🛡️ Sentinel Report`,
-            `Conflicts resolved via ${method}.`,
-            `**Automated Fixes:**`,
-            ...postFixes.map(f => `- ${f}`),
-            `Build & Lint passed.`
-        ].join('\n');
-
-        await commentOnPR(prNumber, summary);
-    } catch (e) {
-        log(`Failed to push: ${e.message}`, 'error');
-    }
+async function commentOnPR(prNumber, body) {
+    await githubRequest(`/issues/${prNumber}/comments`, 'POST', { body });
 }
 
 async function runSweep() {
-  log('Starting Sentinel Sweep...');
-  const prs = await fetchOpenPRs();
-
-  for (const pr of prs) {
-      // Check mergeable state
-      const details = await getPRDetails(pr.number);
-      if (!details) continue;
-
-      log(`Checking PR #${pr.number} (${pr.head.ref})... State: ${details.mergeable_state}`);
-
-      if (details.mergeable_state === 'dirty' || details.mergeable === false) {
-          log(`PR #${pr.number} is dirty. Initiating conflict resolution.`);
-          await processBranch(pr.head.ref, pr.number);
-      } else {
-          log(`PR #${pr.number} is clean.`);
-      }
-  }
-}
-
-async function runPR() {
-    // Current context
-    let branch = process.env.GITHUB_HEAD_REF;
-    if (!branch) {
-         // Fallback for local dev or if env var missing (e.g. not a PR event)
-         try {
-            branch = git('rev-parse --abbrev-ref HEAD');
-         } catch (e) {
-            branch = 'unknown';
-         }
-    }
-
-    log(`Running Sentinel in PR Mode on ${branch}`);
-
-    const fixes = resolveMechanicalConflicts();
-    if (fixes.length > 0) {
-        // Verify
-        try {
-            run('pnpm install');
-            run('pnpm lint');
-            run('pnpm build');
-
-            git('config user.name "Jules Sentinel"');
-            git('config user.email "jules@goldshore.ai"');
-            git('add .');
-            git('commit -m "Sentinel: hygiene fixes"');
-            // Use HEAD:${branch} to push local HEAD to the remote branch
-            git(`push origin HEAD:${branch}`);
-            log('Pushed hygiene fixes.', 'success');
-        } catch (e) {
-            log('Verification failed for PR mode.', 'error');
-            process.exit(1);
-        }
-    }
-}
-
-(async () => {
     try {
-        git('config --global user.name "Jules Sentinel"');
-        git('config --global user.email "jules@goldshore.ai"');
-
-        if (MODE === 'SWEEP') {
-            await runSweep();
-        } else {
-            await runPR();
+        const prs = await fetchOpenPRs();
+        for (const pr of prs) {
+            const prDetails = await githubRequest(`/repos/${GITHUB_REPOSITORY}/pulls/${pr.number}`);
+            if (prDetails.mergeable_state === 'dirty') {
+                log(`PR #${pr.number} (${pr.head.ref}) is dirty. Sentinel activating.`, 'warning');
+                await processPR(pr);
+            } else {
+                log(`PR #${pr.number} is ${prDetails.mergeable_state}. Skipping.`, 'info');
+            }
         }
     } catch (e) {
-        console.error(e);
+        log(`Sweep failed: ${e.message}`, 'error');
         process.exit(1);
+    }
+}
+
+// --- Main ---
+(async () => {
+    log(`Starting Sentinel in ${MODE} mode...`, 'info');
+    setupGitIdentity();
+    if (MODE === 'SWEEP') {
+        await runSweep();
+    } else {
+        // PR Mode
+        const fixed = resolveMechanicalConflicts();
+        if (fixed > 0) {
+            log(`Fixed ${fixed} files locally.`, 'success');
+        }
     }
 })();

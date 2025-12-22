@@ -1,43 +1,29 @@
 name: Sentinel Nightly Scan
 on:
   schedule:
-    - cron: "30 2 * * *" # Daily at 02:30 UTC
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-
+    - cron: "30 2 * * *" # Adjust UTC time as needed
 jobs:
   sentinel:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Full history for rebase
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Sentinel Sweep
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "Jules Sentinel"
+          git config --global user.email "jules@goldshore.ai"
+
+      - name: Run Sentinel
         run: node .Jules/run-sentinel.jsagent --mode=sweep
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-report
