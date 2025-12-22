@@ -36,6 +36,21 @@ function run(cmd, options = {}) {
     }
 }
 
+function loadReport() {
+    let report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    if (fs.existsSync(REPORT_FILE)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+            if (data) {
+                report = { ...report, ...data, timestamp: new Date().toISOString() };
+            }
+        } catch (e) {
+            log(`Failed to load existing report: ${e.message}`, 'WARN');
+        }
+    }
+    return report;
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
@@ -184,19 +199,10 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
-        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
-        run('rm -rf node_modules', { ignoreError: true });
-        run('pnpm install', { ignoreError: true });
-        resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
-    }
-
+    // 1. Identify conflicted files (text)
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
+    // 2. Resolve text-based conflicts
     for (const file of conflictedFiles) {
         if (!fs.existsSync(file)) continue;
         let content = fs.readFileSync(file, 'utf8');
@@ -222,8 +228,21 @@ function resolveMechanicalConflicts() {
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
+            run(`git add "${file}"`);
         }
-        run(`git add "${file}"`);
+    }
+
+    // 3. Lockfile / Hygiene
+    // Always run this as the last step to ensure consistency and fix any lockfile conflicts
+    log('Regenerating lockfile...', 'ACTION');
+    try {
+        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+        run('rm -rf node_modules', { ignoreError: true });
+        run('pnpm install', { ignoreError: true });
+        resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
+    } catch (e) {
+        log(`Lockfile regeneration failed: ${e.message}`, 'WARN');
     }
 
     return resolvedFiles;
@@ -307,7 +326,7 @@ async function processPR(pr, reportObj) {
 }
 
 async function runSweep() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} dirty PRs.`);
 
@@ -318,7 +337,7 @@ async function runSweep() {
 }
 
 async function runPRMode() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
     const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
 
