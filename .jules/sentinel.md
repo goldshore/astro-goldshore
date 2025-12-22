@@ -14,3 +14,8 @@
 **Vulnerability:** The shared `verifyAccess` utility checked the Token Issuer but ignored the Audience claim. This allowed a valid Cloudflare Access token from *any* application in the GoldShore organization to authenticate against *any other* internal service using this library.
 **Learning:** Checking the Issuer alone is insufficient in a multi-app environment sharing an Identity Provider tenant.
 **Prevention:** Always validate the `aud` (Audience) claim to ensure the token was issued specifically for the target service. Updated `@goldshore/auth` to enforce this when `CLOUDFLARE_ACCESS_AUDIENCE` is present in the environment.
+
+## 2025-12-19 - Server-side XSS in DocsSidebar
+**Vulnerability:** `DocsSidebar.astro` used `set:html` with a manually constructed HTML string for links, which would allow XSS if a documentation page title contained malicious scripts.
+**Learning:** Even internal content (like content collections) should be treated as untrusted to enforce "Defense in Depth". Avoiding manual HTML string construction prevents this class of bugs entirely.
+**Prevention:** Use Astro's native expression syntax `{variable}` instead of `set:html` or `Fragment` whenever possible. It automatically handles escaping.
