@@ -1,17 +1,12 @@
 ---
 import WebLayout from './WebLayout.astro';
+import DocsSidebar from '../components/DocsSidebar.astro';
 
 const { title } = Astro.props;
 ---
 <WebLayout title={`${title} | Docs`} description="GoldShore developer documentation">
   <section class="gs-section docs-shell">
-    <aside class="gs-card docs-sidebar" aria-label="Documentation navigation">
-      <h3 class="section-title"><span>◎</span>Documentation</h3>
-      <ul class="docs-nav">
-        <li><a href="/developer/docs/intro">Introduction</a></li>
-        <li><a href="/developer/docs/getting-started">Getting Started</a></li>
-      </ul>
-    </aside>
+    <DocsSidebar currentSlug={Astro.url.pathname.split('/').pop()} />
     <article class="gs-card docs-main">
       <h1>{title}</h1>
       <slot />
