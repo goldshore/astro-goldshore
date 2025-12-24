@@ -18,7 +18,8 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const [OWNER, REPO] = (process.env.GITHUB_REPOSITORY || 'goldshore/astro-goldshore').split('/');
 const ARGS = process.argv.slice(2);
 const MODE = ARGS.includes('--mode=sweep') ? 'SWEEP' : 'PR';
-const REPORT_FILE = '.jules/guard/report.json';
+// Corrected case to match directory structure
+const REPORT_FILE = '.Jules/guard/report.json';
 
 // --- Helpers ---
 
@@ -93,6 +94,7 @@ function fixUnpinnedActions(fileContent) {
         try {
             if (action.startsWith('./')) return match;
             const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
+            // Use git ls-remote to find SHA
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
                 const sha = output.split('\t')[0];
@@ -165,7 +167,6 @@ function fixMissingImports(content, filePath) {
             }
 
             if (!exists) {
-                // If path already has extension, use it, else default to .ts
                 let newFile = resolved;
                 if (!path.extname(newFile)) {
                     newFile += '.ts';
@@ -184,17 +185,7 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
-        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
-        run('rm -rf node_modules', { ignoreError: true });
-        run('pnpm install', { ignoreError: true });
-        resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
-    }
-
+    // 1. Text-based fixes on conflicted files
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
     for (const file of conflictedFiles) {
@@ -217,13 +208,28 @@ function resolveMechanicalConflicts() {
         if (resTodo.modified) { content = resTodo.content; fileModified = true; }
 
         const resImports = fixMissingImports(content, file);
-        if (resImports.modified) { } // Files created
+        if (resImports.modified) { } // Files created - handled separately? No, just side effect.
 
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
         }
         run(`git add "${file}"`);
+    }
+
+    // 2. Lockfile regeneration (Instructions say: remove lockfile, delete node_modules, install)
+    // This should fix lockfile conflicts
+    log('Regenerating lockfile...', 'ACTION');
+    if (fs.existsSync('pnpm-lock.yaml')) {
+        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+    }
+    run('rm -rf node_modules', { ignoreError: true });
+    try {
+        run('pnpm install', { ignoreError: true });
+        resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
+    } catch (e) {
+        log('Failed to regenerate lockfile', 'WARN');
     }
 
     return resolvedFiles;
@@ -259,45 +265,59 @@ async function processPR(pr, reportObj) {
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
+        let rebaseSuccess = false;
         try {
             run(`git fetch origin main`);
             run(`git rebase origin/main`);
+            rebaseSuccess = true;
+            log('Rebase successful. Skipping mechanical fixes.', 'INFO');
         } catch (e) {
             log('Rebase failed, attempting manual merge resolution...', 'WARN');
             run(`git rebase --abort`, { ignoreError: true });
             try {
+                // Generate conflict markers
                 run(`git merge origin/main`);
             } catch (mergeError) {}
+
+            // Rebase failed -> Resolve mechanical conflicts
+            const fixedFiles = resolveMechanicalConflicts();
+
+            if (fixedFiles.length > 0) {
+                run(`git add -A`); // Ensure everything is staged
+                run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+
+                // Verify Build & Lint
+                try {
+                    log('Verifying build...', 'INFO');
+                    run('pnpm lint');
+                    run('pnpm build');
+                } catch (verifyError) {
+                    log('Verification failed.', 'ERROR');
+                    await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
+                    await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
+                        body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification. Handing off to Codex.`
+                    });
+                    reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
+                    return;
+                }
+
+                reportObj.resolved.push({ pr: pr.number, files: fixedFiles });
+                await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
+                    body: `🛡️ **Sentinel Report**\n\nResolved merge conflicts and applied hygiene fixes.\n\n**Files touched:**\n${fixedFiles.map(f => `- ${f}`).join('\n')}`
+                });
+
+            } else {
+                 // No mechanical fixes found, but rebase failed.
+                 // Means conflicts are semantic/complex.
+                 await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
+                 reportObj.failures.push({ pr: pr.number, reason: 'Complex conflicts' });
+                 return;
+            }
         }
 
-        const fixedFiles = resolveMechanicalConflicts();
-
-        if (fixedFiles.length > 0) {
-            run(`git add .`);
-            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
-        }
-
-        try {
-            log('Verifying build...', 'INFO');
-            run('pnpm lint');
-            run('pnpm build');
-        } catch (e) {
-            log('Verification failed.', 'ERROR');
-            await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
-            await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification. Handing off to Codex.`
-            });
-            reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
-            return;
-        }
-
+        // Push (Step 5)
         log('Pushing changes...', 'ACTION');
         run(`git push --force-with-lease origin ${branch}`);
-
-        await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-            body: `🛡️ **Sentinel Report**\n\nResolved merge conflicts and applied hygiene fixes.\n\n**Files touched:**\n${fixedFiles.map(f => `- ${f}`).join('\n')}`
-        });
-        reportObj.resolved.push({ pr: pr.number, files: fixedFiles });
 
     } catch (e) {
         log(`Failed to process ${branch}: ${e.message}`, 'ERROR');
