@@ -45,6 +45,17 @@ function writeReport(data) {
     }
 }
 
+function loadReport() {
+    try {
+        if (fs.existsSync(REPORT_FILE)) {
+             return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        }
+    } catch (e) {
+        log(`Failed to load existing report: ${e.message}`, 'WARN');
+    }
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
 async function githubRequest(method, path, body = null) {
     if (!GITHUB_TOKEN) {
         throw new Error('GITHUB_TOKEN is required for API access.');
@@ -307,7 +318,11 @@ async function processPR(pr, reportObj) {
 }
 
 async function runSweep() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
+    if (!report.resolved) report.resolved = [];
+    if (!report.failures) report.failures = [];
+    report.timestamp = new Date().toISOString();
+
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} dirty PRs.`);
 
@@ -318,7 +333,11 @@ async function runSweep() {
 }
 
 async function runPRMode() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
+    if (!report.resolved) report.resolved = [];
+    if (!report.failures) report.failures = [];
+    report.timestamp = new Date().toISOString();
+
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
     const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
 
