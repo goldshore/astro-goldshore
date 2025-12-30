@@ -36,6 +36,17 @@ function run(cmd, options = {}) {
     }
 }
 
+function loadReport() {
+    try {
+        if (fs.existsSync(REPORT_FILE)) {
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        }
+    } catch (e) {
+        log(`Failed to load existing report: ${e.message}`, 'WARN');
+    }
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
@@ -88,11 +99,15 @@ async function githubRequest(method, path, body = null) {
 
 function fixUnpinnedActions(fileContent) {
     let modified = false;
-    let newContent = fileContent.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
-        if (tag.match(/^[0-9a-f]{40}$/)) return match;
+    // Regex to capture uses: action@tag, avoiding SHAs (40 chars)
+    // We look for tags that are NOT 40 hex chars.
+    let newContent = fileContent.replace(/uses:\s+([^\s]+)@([^\s#]+)/g, (match, action, tag) => {
+        if (tag.match(/^[0-9a-f]{40}$/)) return match; // Already pinned
+
         try {
             if (action.startsWith('./')) return match;
             const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
+            // Use git ls-remote to find the SHA for the tag
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
                 const sha = output.split('\t')[0];
@@ -110,6 +125,7 @@ function fixUnpinnedActions(fileContent) {
 }
 
 function fixAstroDuplicates(content) {
+    // Basic conflict marker resolution: choose HEAD (ours)
     const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?>>>>>>> [^\n]*/g;
     let modified = false;
     let newContent = content;
@@ -120,10 +136,12 @@ function fixAstroDuplicates(content) {
             return headContent;
         });
     }
+    // TODO: Detect duplication without conflict markers if needed
     return { modified, content: newContent };
 }
 
 function fixDeadTodos(content) {
+    // Remove TODOs that follow a return statement
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
     let newContent = content.replace(regex, (match, ret) => {
@@ -136,8 +154,21 @@ function fixDeadTodos(content) {
 function fixEnvTypes(content, filePath) {
     if (content.includes(': Env') || content.includes('<Env>')) {
         if (!content.includes('interface Env') && !content.includes('type Env') && !content.includes('import type { Env }')) {
-             if (filePath.endsWith('.ts') || filePath.endsWith('.js')) {
-                 const importStmt = "import type { Env } from '@cloudflare/workers-types';\n";
+            const importStmt = "import type { Env } from '@cloudflare/workers-types';\n";
+
+            if (filePath.endsWith('.astro')) {
+                // For Astro files, inject into the first frontmatter block
+                if (content.startsWith('---')) {
+                    const parts = content.split('---');
+                    if (parts.length >= 3) {
+                        parts[1] = '\n' + importStmt + parts[1];
+                        return { modified: true, content: parts.join('---') };
+                    }
+                }
+                // If no frontmatter, create it? Usually astro files have it. If not, it's HTML-like.
+                // Assuming well-formed astro for now or valid partial.
+            } else if (filePath.endsWith('.ts') || filePath.endsWith('.js')) {
+                 // Or detect worker-configuration.d.ts if relevant, but cloudflare types is safer default for generic Env
                  return { modified: true, content: importStmt + content };
              }
         }
@@ -184,24 +215,27 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
+    // Identify conflicted files
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+
+    // Lockfile Conflicts
+    if (conflictedFiles.includes('pnpm-lock.yaml')) {
+        log('Resolving lockfile conflict...', 'ACTION');
         try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
+        run('git add pnpm-lock.yaml');
         resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
     }
 
-    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
-
     for (const file of conflictedFiles) {
+        if (file === 'pnpm-lock.yaml') continue; // Handled
         if (!fs.existsSync(file)) continue;
+
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
+        // Apply Fixes
         if (file.endsWith('.astro')) {
             const res = fixAstroDuplicates(content);
             if (res.modified) { content = res.content; fileModified = true; }
@@ -210,6 +244,7 @@ function resolveMechanicalConflicts() {
             const res = fixUnpinnedActions(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
+
         const resEnv = fixEnvTypes(content, file);
         if (resEnv.modified) { content = resEnv.content; fileModified = true; }
 
@@ -217,13 +252,22 @@ function resolveMechanicalConflicts() {
         if (resTodo.modified) { content = resTodo.content; fileModified = true; }
 
         const resImports = fixMissingImports(content, file);
-        if (resImports.modified) { } // Files created
+        if (resImports.modified) {
+            // fixMissingImports creates files directly, no content change returned usually,
+            // but we need to verify if we should save the file itself?
+            // fixMissingImports returns { modified, content } but doesn't modify content itself usually.
+        }
 
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
         }
-        run(`git add "${file}"`);
+        // Always add the file back to mark resolution (even if we just touched it, or if we want to accept ours?)
+        // If we didn't modify it, the markers are still there!
+        // So we only add if we modified (removed markers).
+        if (fileModified) {
+            run(`git add "${file}"`);
+        }
     }
 
     return resolvedFiles;
@@ -266,14 +310,24 @@ async function processPR(pr, reportObj) {
             log('Rebase failed, attempting manual merge resolution...', 'WARN');
             run(`git rebase --abort`, { ignoreError: true });
             try {
+                // We fallback to merge to expose conflicts for mechanical resolution
                 run(`git merge origin/main`);
-            } catch (mergeError) {}
+            } catch (mergeError) {
+                // Merge failed, conflicts exist. Proceed to resolve.
+            }
         }
 
         const fixedFiles = resolveMechanicalConflicts();
 
-        if (fixedFiles.length > 0) {
-            run(`git add .`);
+        // Check if any conflicts remain
+        const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+
+        if (remainingConflicts) {
+             log(`Unresolved conflicts in: ${remainingConflicts.replace(/\n/g, ', ')}`, 'WARN');
+             // We can't commit if conflicts remain.
+             // Verification will fail.
+        } else if (fixedFiles.length > 0) {
+            run(`git add .`); // Ensure all changes including new modules are staged
             run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
         }
 
@@ -307,7 +361,9 @@ async function processPR(pr, reportObj) {
 }
 
 async function runSweep() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
+    report.lastRun = new Date().toISOString();
+
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} dirty PRs.`);
 
@@ -318,7 +374,9 @@ async function runSweep() {
 }
 
 async function runPRMode() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
+    report.lastRun = new Date().toISOString();
+
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
     const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
 
