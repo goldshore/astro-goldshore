@@ -39,6 +39,9 @@ function run(cmd, options = {}) {
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
+        // Read existing report if possible to merge/update?
+        // For now, we overwrite as per daily run logic, but the instruction mentions "reuse".
+        // Since this script runs as a single job, overwriting is likely intended for the current run's output.
         fs.writeFileSync(REPORT_FILE, JSON.stringify(data, null, 2));
     } catch (e) {
         log(`Failed to write report: ${e.message}`, 'WARN');
@@ -93,6 +96,7 @@ function fixUnpinnedActions(fileContent) {
         try {
             if (action.startsWith('./')) return match;
             const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
+            // Use git ls-remote to find the SHA
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
                 const sha = output.split('\t')[0];
@@ -124,6 +128,8 @@ function fixAstroDuplicates(content) {
 }
 
 function fixDeadTodos(content) {
+    // Regex to find TODOs that are unreachable or obsolete
+    // Example: return ...; // TODO: implement this
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
     let newContent = content.replace(regex, (match, ret) => {
@@ -184,21 +190,25 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
-        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+    // Identify conflicted files
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+
+    // Check for lockfile conflicts
+    if (conflictedFiles.includes('pnpm-lock.yaml')) {
+        log('Regenerating lockfile due to conflict...', 'ACTION');
+        if (fs.existsSync('pnpm-lock.yaml')) {
+            try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+        }
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
         resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
     }
 
-    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
-
     for (const file of conflictedFiles) {
+        if (file === 'pnpm-lock.yaml') continue; // Handled above
         if (!fs.existsSync(file)) continue;
+
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
@@ -210,6 +220,7 @@ function resolveMechanicalConflicts() {
             const res = fixUnpinnedActions(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
+
         const resEnv = fixEnvTypes(content, file);
         if (resEnv.modified) { content = resEnv.content; fileModified = true; }
 
@@ -217,7 +228,7 @@ function resolveMechanicalConflicts() {
         if (resTodo.modified) { content = resTodo.content; fileModified = true; }
 
         const resImports = fixMissingImports(content, file);
-        if (resImports.modified) { } // Files created
+        if (resImports.modified) { } // Files created - no need to modify content of current file unless import changed
 
         if (fileModified) {
             fs.writeFileSync(file, content);
@@ -267,14 +278,33 @@ async function processPR(pr, reportObj) {
             run(`git rebase --abort`, { ignoreError: true });
             try {
                 run(`git merge origin/main`);
-            } catch (mergeError) {}
+            } catch (mergeError) {
+                // Merge failed, conflicts exist. This is expected.
+                log('Merge failed with conflicts. Proceeding to resolve...', 'INFO');
+            }
         }
 
         const fixedFiles = resolveMechanicalConflicts();
 
         if (fixedFiles.length > 0) {
             run(`git add .`);
-            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+            try {
+                run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+            } catch (e) {
+                 // Nothing to commit?
+                 if (run('git diff --staged --quiet', { ignoreError: true }) !== '') {
+                     // Changes exist
+                 } else {
+                     log('No changes to commit after resolution.', 'INFO');
+                     return;
+                 }
+            }
+        } else {
+            // No files fixed, but maybe conflicts persist?
+            const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+            if (remainingConflicts) {
+                throw new Error('Mechanical resolution failed. Semantic conflicts remain.');
+            }
         }
 
         try {
