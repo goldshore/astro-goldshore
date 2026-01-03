@@ -36,6 +36,17 @@ function run(cmd, options = {}) {
     }
 }
 
+function loadReport() {
+    try {
+        if (fs.existsSync(REPORT_FILE)) {
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        }
+    } catch (e) {
+        log(`Failed to load existing report: ${e.message}`, 'WARN');
+    }
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
@@ -184,21 +195,30 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
-        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+    // Always regenerate lockfile if there are conflicts or just as a safety measure in conflict mode
+    // The user instruction says "Lockfile Conflicts: Remove... Delete node_modules... pnpm install"
+    // We do this if pnpm-lock.yaml is conflicted OR if we just want to ensure consistency after rebase/merge
+
+    // Check if pnpm-lock.yaml is in conflict
+    const diff = run('git diff --name-only --diff-filter=U', { ignoreError: true }) || '';
+    const hasLockfileConflict = diff.includes('pnpm-lock.yaml');
+
+    if (hasLockfileConflict) {
+        log('Resolving lockfile conflict...', 'ACTION');
+        if (fs.existsSync('pnpm-lock.yaml')) {
+            try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+        }
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
         resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
     }
 
-    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+    const conflictedFiles = (run('git diff --name-only --diff-filter=U', { ignoreError: true }) || '').split('\n').filter(Boolean);
 
     for (const file of conflictedFiles) {
         if (!fs.existsSync(file)) continue;
+        if (file === 'pnpm-lock.yaml') continue; // Handled above
+
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
@@ -222,8 +242,13 @@ function resolveMechanicalConflicts() {
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
+            run(`git add "${file}"`);
         }
-        run(`git add "${file}"`);
+    }
+
+    // If we regenerated lockfile, add it
+    if (hasLockfileConflict) {
+        run('git add pnpm-lock.yaml');
     }
 
     return resolvedFiles;
@@ -259,6 +284,7 @@ async function processPR(pr, reportObj) {
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
+        // Rebase attempt
         try {
             run(`git fetch origin main`);
             run(`git rebase origin/main`);
@@ -267,13 +293,20 @@ async function processPR(pr, reportObj) {
             run(`git rebase --abort`, { ignoreError: true });
             try {
                 run(`git merge origin/main`);
-            } catch (mergeError) {}
+            } catch (mergeError) {
+                // Merge failed, conflicts exist. This is expected.
+            }
         }
 
         const fixedFiles = resolveMechanicalConflicts();
 
+        // Check if any conflicts remain
+        const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+        if (remainingConflicts) {
+             throw new Error(`Unresolved conflicts in: ${remainingConflicts.replace(/\n/g, ', ')}`);
+        }
+
         if (fixedFiles.length > 0) {
-            run(`git add .`);
             run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
         }
 
@@ -307,7 +340,7 @@ async function processPR(pr, reportObj) {
 }
 
 async function runSweep() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} dirty PRs.`);
 
@@ -318,7 +351,7 @@ async function runSweep() {
 }
 
 async function runPRMode() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport();
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
     const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
 
