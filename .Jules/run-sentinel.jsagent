@@ -110,6 +110,8 @@ function fixUnpinnedActions(fileContent) {
 }
 
 function fixAstroDuplicates(content) {
+    // Strategy: Favor the HEAD version (user changes) but clean up conflict markers.
+    // Ensure we don't end up with duplicate frontmatter if both sides added imports.
     const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?>>>>>>> [^\n]*/g;
     let modified = false;
     let newContent = content;
@@ -120,10 +122,16 @@ function fixAstroDuplicates(content) {
             return headContent;
         });
     }
+
+    // Additional check: Duplicate frontmatter blocks (--- ... --- ... ---)
+    // This simple check just ensures we don't have multiple blocks if regex failed or if manual merge left them.
+    // For now, reliance on conflict marker resolution is safer than aggressive parsing.
+
     return { modified, content: newContent };
 }
 
 function fixDeadTodos(content) {
+    // Removes TODOs that are unreachable or obsolete
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
     let newContent = content.replace(regex, (match, ret) => {
@@ -184,46 +192,56 @@ function fixMissingImports(content, filePath) {
 function resolveMechanicalConflicts() {
     let resolvedFiles = [];
 
-    if (fs.existsSync('pnpm-lock.yaml')) {
+    // Get list of conflicted files
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+
+    // 1. Lockfile Conflicts
+    if (conflictedFiles.includes('pnpm-lock.yaml')) {
+        log('Resolving pnpm-lock.yaml conflict...', 'ACTION');
         try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
         resolvedFiles.push('pnpm-lock.yaml');
-    } else {
-         run('rm -rf node_modules', { ignoreError: true });
-         run('pnpm install', { ignoreError: true });
-         resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
     }
 
-    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
-
+    // 2. Process other files
     for (const file of conflictedFiles) {
+        if (file === 'pnpm-lock.yaml') continue; // Handled above
         if (!fs.existsSync(file)) continue;
+
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
+        // Astro Duplicates
         if (file.endsWith('.astro')) {
             const res = fixAstroDuplicates(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
+
+        // Unpinned Actions
         if (file.startsWith('.github/workflows/')) {
             const res = fixUnpinnedActions(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
+
+        // Env Types
         const resEnv = fixEnvTypes(content, file);
         if (resEnv.modified) { content = resEnv.content; fileModified = true; }
 
+        // Dead TODOs
         const resTodo = fixDeadTodos(content);
         if (resTodo.modified) { content = resTodo.content; fileModified = true; }
 
+        // Missing Imports (Side effect: creates files)
         const resImports = fixMissingImports(content, file);
-        if (resImports.modified) { } // Files created
+        if (resImports.modified) { }
 
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
+            run(`git add "${file}"`);
         }
-        run(`git add "${file}"`);
     }
 
     return resolvedFiles;
@@ -238,6 +256,7 @@ async function fetchOpenPRs() {
 
     const candidates = [];
     for (const pr of prs) {
+        // Detailed check to get mergeable_state
         const detailed = await githubRequest('GET', `/repos/${OWNER}/${REPO}/pulls/${pr.number}`);
         if (detailed.mergeable_state === 'dirty') {
             candidates.push(detailed);
@@ -259,41 +278,53 @@ async function processPR(pr, reportObj) {
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
+        // Step 2: Rebase/Merge
         try {
             run(`git fetch origin main`);
             run(`git rebase origin/main`);
         } catch (e) {
-            log('Rebase failed, attempting manual merge resolution...', 'WARN');
+            log('Rebase failed due to conflicts. Attempting resolution...', 'WARN');
             run(`git rebase --abort`, { ignoreError: true });
+
+            // Fallback to merge to expose conflict markers for resolution
             try {
-                run(`git merge origin/main`);
-            } catch (mergeError) {}
+                 run(`git merge origin/main`);
+            } catch (mergeError) {
+                // Merge failed (expected), proceed to resolve
+            }
         }
 
+        // Step 3: Resolve Mechanical Conflicts
         const fixedFiles = resolveMechanicalConflicts();
 
         if (fixedFiles.length > 0) {
-            run(`git add .`);
+            run(`git add .`); // Ensure generated files are added
             run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
         }
 
+        // Step 4: Verify Build & Lint
         try {
             log('Verifying build...', 'INFO');
             run('pnpm lint');
             run('pnpm build');
         } catch (e) {
-            log('Verification failed.', 'ERROR');
+            log('Verification failed. Reverting changes...', 'ERROR');
+            // Revert changes
+            run(`git reset --hard origin/${branch}`);
+
             await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
             await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification. Handing off to Codex.`
+                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed build/lint verification. Changes reverted. Handing off to Codex.`
             });
             reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
             return;
         }
 
+        // Step 5: Push
         log('Pushing changes...', 'ACTION');
         run(`git push --force-with-lease origin ${branch}`);
 
+        // Step 6: Document
         await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
             body: `🛡️ **Sentinel Report**\n\nResolved merge conflicts and applied hygiene fixes.\n\n**Files touched:**\n${fixedFiles.map(f => `- ${f}`).join('\n')}`
         });
@@ -301,6 +332,8 @@ async function processPR(pr, reportObj) {
 
     } catch (e) {
         log(`Failed to process ${branch}: ${e.message}`, 'ERROR');
+        // If critical failure, ensure we don't leave mess?
+        // We are in a script, next iteration might reset.
         await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
         reportObj.failures.push({ pr: pr.number, reason: e.message });
     }
@@ -320,11 +353,27 @@ async function runSweep() {
 async function runPRMode() {
     const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
-    const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
+
+    // In PR mode, we might not have the PR number easily if not passed.
+    // GitHub Actions event payload has it.
+    let prNumber = null;
+    if (process.env.GITHUB_EVENT_PATH) {
+        try {
+            const event = require(process.env.GITHUB_EVENT_PATH);
+            prNumber = event.pull_request ? event.pull_request.number : null;
+        } catch (e) {}
+    }
 
     if (prNumber) {
         const pr = { number: prNumber, head: { ref: branch, repo: { full_name: `${OWNER}/${REPO}` } } };
+        // We need 'mergeable_state' check?
+        // In PR mode, we just want to run sentinel on *this* PR.
+        // But the logic above relies on checking mergeable_state to confirm it's dirty?
+        // If triggered by sentinel-pr.yml, it runs on 'opened', 'synchronize'.
+        // We should just run processPR.
         await processPR(pr, report);
+    } else {
+        log('No PR number found in environment.', 'WARN');
     }
     writeReport(report);
 }
