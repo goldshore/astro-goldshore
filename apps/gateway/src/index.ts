@@ -8,6 +8,8 @@ type Env = {
   GATEWAY_KV: KVNamespace;
   AI: any;
   ENV: string;
+  CLOUDFLARE_ACCESS_AUDIENCE?: string;
+  CLOUDFLARE_TEAM_DOMAIN?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
