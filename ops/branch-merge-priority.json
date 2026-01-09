@@ -1,0 +1,7 @@
+{
+  "base": "origin/main",
+  "integration_branch": "integration/conflict-resolution/20260109T124937Z",
+  "generated_at": "2026-01-09T12:49:38.432871+00:00",
+  "dry_run": true,
+  "branches": []
+}
