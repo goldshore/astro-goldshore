@@ -5,6 +5,7 @@ BASE_BRANCH="origin/main"
 INTEGRATION_BRANCH="integration/conflict-resolution/$(date +%Y%m%dT%H%M%SZ)"
 REPORT_PATH="ops/conflict-report.json"
 ALLOWLIST_PATH=""
+ALLOW_DIRTY=0
 DRY_RUN=0
 
 usage() {
@@ -17,6 +18,7 @@ Options:
   --allowlist <path>     File with branch names to include (one per line)
   --report <path>        JSON report output path (default: ops/conflict-report.json)
   --dry-run              Do not perform merges; only report scoring and file counts
+  --allow-dirty          Allow running with a dirty working tree (dry-run only)
   -h, --help             Show this help message
 USAGE
 }
@@ -33,6 +35,8 @@ while [[ $# -gt 0 ]]; do
       REPORT_PATH="$2"; shift 2 ;;
     --dry-run)
       DRY_RUN=1; shift ;;
+    --allow-dirty)
+      ALLOW_DIRTY=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -40,7 +44,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -n "$(git status --porcelain)" ]]; then
+if [[ -n "$(git status --porcelain)" && "$ALLOW_DIRTY" -ne 1 && "$DRY_RUN" -ne 1 ]]; then
   echo "Working tree is not clean. Please commit or stash changes before running." >&2
   exit 1
 fi
@@ -57,12 +61,24 @@ base = "${BASE_BRANCH}"
 integration = "${INTEGRATION_BRANCH}"
 report_path = "${REPORT_PATH}"
 dry_run = int("${DRY_RUN}")
+allow_dirty = int("${ALLOW_DIRTY}")
 allowlist_path = "${ALLOWLIST_PATH}"
 
 now = datetime.datetime.now(datetime.timezone.utc)
 
 def run(cmd):
     return subprocess.check_output(cmd, shell=True, text=True).strip()
+
+def scan_conflict_markers():
+    try:
+        matches = run("git grep -n -I -E '^(<<<<<<<|=======|>>>>>>>)' -- .")
+    except subprocess.CalledProcessError:
+        return []
+    results = []
+    for line in matches.splitlines():
+        path, rest = line.split(":", 1)
+        results.append({"file": path, "line": rest})
+    return results
 
 def load_branches():
     refs = run("git for-each-ref --format='%(refname:short)' refs/remotes/origin").splitlines()
@@ -123,6 +139,7 @@ def score_branch(branch):
         "test_score": test_score,
         "age_score": age_score,
         "total_score": total,
+        "touches_pnpm_lock": "pnpm-lock.yaml" in files,
         "files_sample": files[:10],
     }
 
@@ -156,6 +173,8 @@ payload = {
     "integration_branch": integration,
     "generated_at": now.isoformat(),
     "dry_run": bool(dry_run),
+    "allow_dirty": bool(allow_dirty),
+    "conflict_markers": scan_conflict_markers(),
     "branches": results,
 }
 
