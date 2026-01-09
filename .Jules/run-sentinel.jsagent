@@ -18,7 +18,8 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const [OWNER, REPO] = (process.env.GITHUB_REPOSITORY || 'goldshore/astro-goldshore').split('/');
 const ARGS = process.argv.slice(2);
 const MODE = ARGS.includes('--mode=sweep') ? 'SWEEP' : 'PR';
-const REPORT_FILE = '.jules/guard/report.json';
+// Corrected case to match directory structure
+const REPORT_FILE = '.Jules/guard/report.json';
 
 // --- Helpers ---
 
@@ -54,10 +55,31 @@ function loadReport() {
     return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
 }
 
+function readReport() {
+    try {
+        if (fs.existsSync(REPORT_FILE)) {
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
-        fs.writeFileSync(REPORT_FILE, JSON.stringify(data, null, 2));
+        let report = data;
+        if (fs.existsSync(REPORT_FILE)) {
+            try {
+                const existing = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+                // Merge arrays
+                report = {
+                    timestamp: data.timestamp,
+                    resolved: [...(existing.resolved || []), ...data.resolved],
+                    failures: [...(existing.failures || []), ...data.failures]
+                };
+            } catch (e) {}
+        }
+        fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
     } catch (e) {
         log(`Failed to write report: ${e.message}`, 'WARN');
     }
@@ -129,14 +151,23 @@ function fixUnpinnedActions(fileContent) {
 }
 
 function fixAstroDuplicates(content) {
+    // Looks for Git conflict markers where HEAD is preserved.
+    // Safety check: Only apply if conflict contains frontmatter fences '---'.
+    // This targets the "Multiple Astro Component Definitions" scenario.
+    // If it's a conflict deep in the HTML template without frontmatter, it's likely a semantic conflict.
+
     const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?>>>>>>> [^\n]*/g;
     let modified = false;
     let newContent = content;
 
     if (content.match(conflictRegex)) {
         newContent = content.replace(conflictRegex, (match, headContent) => {
-            modified = true;
-            return headContent;
+            // Only resolve if it looks like a frontmatter/structure duplication
+            if (match.includes('---')) {
+                 modified = true;
+                 return headContent;
+            }
+            return match; // Leave conflict markers if no frontmatter involved
         });
     }
     return { modified, content: newContent };
@@ -193,7 +224,6 @@ function fixMissingImports(content, filePath) {
             }
 
             if (!exists) {
-                // If path already has extension, use it, else default to .ts
                 let newFile = resolved;
                 if (!path.extname(newFile)) {
                     newFile += '.ts';
@@ -270,6 +300,7 @@ function resolveMechanicalConflicts() {
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
+            run(`git add "${file}"`);
         }
 
         // Add file to stage even if not modified by us?
@@ -419,7 +450,10 @@ async function runPRMode() {
     }
 
     if (prNumber) {
-        const pr = { number: prNumber, head: { ref: branch, repo: { full_name: `${OWNER}/${REPO}` } } };
+        const pr = {
+             number: prNumber,
+             head: { ref: branch, repo: { full_name: `${OWNER}/${REPO}` } }
+        };
         await processPR(pr, report);
     } else {
         log('No PR number found in environment.', 'WARN');
