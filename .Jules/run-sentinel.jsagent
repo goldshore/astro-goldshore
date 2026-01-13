@@ -20,8 +20,7 @@ function run(cmd, options = {}) {
 function loadReport() {
     try {
         if (fs.existsSync(REPORT_FILE)) {
-            const data = fs.readFileSync(REPORT_FILE, 'utf8');
-            return JSON.parse(data);
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
         }
     } catch (e) {
         log(`Failed to load existing report: ${e.message}`, 'WARN');
@@ -290,6 +289,16 @@ console.log('✅ Lockfile present.');
 try {
     const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().trim().split('\n').filter(Boolean);
 
+    // Always regenerate lockfile if there are conflicts or just as a safety measure in conflict mode
+    // The user instruction says "Lockfile Conflicts: Remove... Delete node_modules... pnpm install"
+    // We do this if pnpm-lock.yaml is conflicted OR if we just want to ensure consistency after rebase/merge
+
+    // Check if pnpm-lock.yaml is in conflict
+    const diff = run('git diff --name-only --diff-filter=U', { ignoreError: true }) || '';
+    const hasLockfileConflict = diff.includes('pnpm-lock.yaml');
+
+    if (hasLockfileConflict) {
+        log('Resolving lockfile conflict...', 'ACTION');
     // Always regenerate lockfile if conflicts or generally to ensure consistency
     log('Regenerating lockfile...', 'ACTION');
     if (fs.existsSync('pnpm-lock.yaml')) {
@@ -344,6 +353,7 @@ try {
     for (const file of conflictedFiles) {
         if (file === 'pnpm-lock.yaml') continue; // Handled above
         if (!fs.existsSync(file)) continue;
+        if (file === 'pnpm-lock.yaml') continue; // Handled above
 
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
@@ -386,6 +396,12 @@ try {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
             run(`git add "${file}"`);
+        }
+    }
+
+    // If we regenerated lockfile, add it
+    if (hasLockfileConflict) {
+        run('git add pnpm-lock.yaml');
         }
     }
 
@@ -467,6 +483,7 @@ async function processPR(pr, reportObj) {
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
+        // Rebase attempt
         // Try rebase first
         let rebaseFailed = false;
         // Step 2: Rebase/Merge
@@ -496,6 +513,7 @@ async function processPR(pr, reportObj) {
                 // Merge to generate conflict markers for Sentinel to parse
                 run(`git merge origin/main`);
             } catch (mergeError) {
+                // Merge failed, conflicts exist. This is expected.
                 // Merge failed, conflicts exist in working tree
                 log('Merge conflict detected.', 'INFO');
             }
@@ -504,6 +522,7 @@ async function processPR(pr, reportObj) {
         // Step 3: Resolve Mechanical Conflicts
         const fixedFiles = resolveMechanicalConflicts();
 
+        // Check if any conflicts remain
         // Verify if any conflicts remain
         const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
         if (remainingConflicts) {
