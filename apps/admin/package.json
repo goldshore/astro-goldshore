@@ -9,12 +9,12 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "astro": "^5.15.9",
-    "@astrojs/cloudflare": "^12.6.11",
-    "@goldshore/ui": "workspace:*",
-    "@goldshore/theme": "workspace:*"
+    "@goldshore/theme": "file:../../packages/theme",
+    "@goldshore/ui": "file:../../packages/ui",
+    "astro": "^5.15.9"
   },
   "devDependencies": {
+    "@astrojs/cloudflare": "^12.6.12",
     "typescript": "^5.9.3"
   }
 }

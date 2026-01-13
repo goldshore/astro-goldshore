@@ -23,3 +23,42 @@ jobs:
           node-version: 20
       - name: Preview SENTINEL prompt
         run: node ./.Jules/run-sentinel.jsagent
+  contents: write
+  pull-requests: write
+
+jobs:
+  sentinel-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Run Sentinel (PR Mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          node .Jules/run-sentinel.jsagent --mode=pr
+
+      - name: Upload Sentinel report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .jules/guard/report.json

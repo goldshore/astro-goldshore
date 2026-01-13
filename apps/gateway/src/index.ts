@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
+import { cors } from 'hono/cors';
 import { checkAuth } from './auth';
 
 type Env = {
@@ -18,6 +19,27 @@ app.use('*', secureHeaders());
 // Authentication Middleware
 app.use('*', async (c, next) => {
     // Skip auth for health check and OPTIONS requests (CORS preflight)
+  CLOUDFLARE_ACCESS_AUDIENCE?: string;
+  CLOUDFLARE_TEAM_DOMAIN?: string;
+};
+
+const app = new Hono<{ Bindings: Env }>();
+
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
+
+// Sentinel: Add CORS protection
+app.use('*', cors({
+  origin: '*', // Public gateway
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'CF-Access-Jwt-Assertion'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 600,
+}));
+
+// Authentication Middleware
+app.use('*', async (c, next) => {
+    // Skip auth for health check and OPTIONS requests (handled by cors middleware)
     if (c.req.path === '/health' || c.req.method === 'OPTIONS') {
         await next();
         return;
@@ -50,6 +72,7 @@ app.all('*', async (c) => {
         return fetch(targetUrl.toString(), c.req.raw);
     }
 
+    // Fallback to fetch if no binding (e.g. local dev without binding simulation)
     return c.text('Upstream API not configured', 500);
 });
 

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@goldshore/auth": "workspace:*",
+    "@goldshore/auth": "file:../../packages/auth",
     "hono": "^4.0.0"
   },
   "devDependencies": {

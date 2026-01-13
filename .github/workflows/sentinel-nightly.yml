@@ -24,3 +24,40 @@ jobs:
           node-version: 20
       - name: Preview nightly SENTINEL prompt
         run: node ./.Jules/run-sentinel.jsagent
+name: Sentinel Nightly Scan
+on:
+  schedule:
+    - cron: "30 2 * * *" # Adjust UTC time as needed
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+            node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+            version: 8
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run Sentinel
+        run: |
+            git config user.name "Jules Sentinel"
+            git config user.email "jules@goldshore.ai"
+            node .Jules/run-sentinel.jsagent --mode=sweep
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-report
+          path: .jules/guard/report.json

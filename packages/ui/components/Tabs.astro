@@ -4,17 +4,20 @@ const { tabs = [] } = Astro.props;
 
 <div class="gs-tabs">
   <div class="gs-tabs-header">
-    {tabs.map((t: any) => (
-      <button
-        class="gs-tab-trigger"
-        data-target={t.id}
-      >
+    {tabs.map((t) => (
+      <button class="gs-button gs-button--ghost gs-button--small" onclick={`showTab(event, '${t.id}')`}>
         {t.label}
       </button>
     ))}
   </div>
 
-  <div class="gs-tabs-content">
+  <!--
+    Refactored to avoid dynamic slot names which are not supported in Astro.
+    Consumers should place content directly in the default slot,
+    or we can implement a specific content structure if needed in the future.
+    For now, we render the default slot.
+  -->
+  <div class="gs-tab-content">
       <slot />
   </div>
 </div>
@@ -62,13 +65,25 @@ const { tabs = [] } = Astro.props;
       // Init
       setActive(activeId);
     });
+<script is:inline>
+  window.showTab = function(event, id) {
+    const container = event.target.closest('.gs-tabs');
+    if (!container) return;
+
+    // Deactivate all content tabs in this container
+    const contentTabs = container.querySelectorAll('.gs-tab');
+    contentTabs.forEach((el) => {
+        el.classList.toggle('is-active', el.id === id);
+    });
+
+    const buttons = container.querySelectorAll('.gs-tabs-header button');
+    buttons.forEach((btn) => btn.classList.toggle('active', btn === event.target));
   }
 
   // Run on load and after Astro swaps (if using ViewTransitions)
   initTabs();
   document.addEventListener('astro:page-load', initTabs);
 </script>
-
 <style>
   .gs-tabs-header {
     display: flex;

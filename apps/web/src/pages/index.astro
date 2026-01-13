@@ -48,4 +48,69 @@ import MarketingLayout from '../layouts/MarketingLayout.astro';
             </p>
         </div>
     </section>
+import { GSButton } from '@goldshore/ui';
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+
+export const prerender = true;
+
+const capabilities = [
+  {
+    title: 'Algorithmic Precision',
+    body: 'Execution engines tuned for millisecond response and adaptive guardrails.',
+  },
+  {
+    title: 'Resilient Security',
+    body: 'Zero-trust defaults, observability built-in, and layered failover patterns.',
+  },
+  {
+    title: 'Global Presence',
+    body: 'Low-latency routes across regions with automated capacity scaling.',
+  },
+];
+
+const highlights = [
+  { label: 'Availability', value: '99.995%', tone: 'success' },
+  { label: 'Deploys / week', value: '48', tone: 'info' },
+  { label: 'Signals processed / day', value: '2.1B', tone: 'warning' },
+];
+---
+<MarketingLayout title="GoldShore | Shaping Waves" description="Unified AI infrastructure for trading and intelligent operations.">
+  <section class="gs-hero">
+    <div>
+      <p class="gs-badge" style="margin-bottom: var(--gs-space-3);">Modern ops for fluid markets</p>
+      <h1>Shaping Waves with Applied Intelligence</h1>
+      <p>
+        GoldShore builds resilient, automation-first systems for trading, control, and applied intelligence. Each surface ships with observability, safety, and responsive design baked in.
+      </p>
+      <div style="display:flex; gap: var(--gs-space-3); flex-wrap: wrap;">
+        <GSButton href="/services">View Services</GSButton>
+        <GSButton href="/contact" variant="secondary">Book a call</GSButton>
+      </div>
+    </div>
+    <div class="gs-card">
+      <h3 class="section-title"><span>⇄</span>Performance at a glance</h3>
+      <div class="gs-grid columns-2">
+        {highlights.map((item) => (
+          <div class="gs-kpi">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <div class={`gs-badge ${item.tone ?? ''}`}>Live</div>
+          </div>
+        ))}
+      </div>
+      <div class="gs-helper" style="margin-top: var(--gs-space-4);">Backed by global routing, automated rollbacks, and human-in-the-loop controls.</div>
+    </div>
+  </section>
+
+  <section class="gs-section">
+    <div class="section-title"><span>◎</span><h2>Platform Values</h2></div>
+    <div class="gs-grid columns-3">
+      {capabilities.map((capability) => (
+        <article class="gs-card">
+          <h3>{capability.title}</h3>
+          <p>{capability.body}</p>
+        </article>
+      ))}
+    </div>
+  </section>
 </MarketingLayout>
