@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import DocsSearch from './DocsSearch.astro';
 
 const { currentSlug } = Astro.props;
 const pages = await getCollection('docs');
@@ -13,6 +14,11 @@ function getHref(slug: string) {
 ---
 
 <aside class="gs-card docs-sidebar" aria-label="Documentation navigation">
+  <h3 class="section-title"><span aria-hidden="true">◎</span>Documentation</h3>
+  <div class="search-container">
+    <DocsSearch />
+  </div>
+
   <h3 class="section-title"><span>◎</span>Documentation</h3>
   <ul class="docs-nav">
     {pages.map((p) => (
