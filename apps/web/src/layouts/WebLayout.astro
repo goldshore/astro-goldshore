@@ -25,8 +25,7 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
     <div class="gs-page-shell">
       <header class="gs-header">
         <a class="gs-logo" href="/" aria-label="GoldShore home">
-          {/* LCP Optimization: Prioritize loading the logo as it's often the first visual element */}
-          <img src={logo} alt="GoldShore Penrose logo" width="36" height="36" fetchpriority="high" />
+          <img src={logo} alt="GoldShore Penrose logo" width="36" height="36" fetchpriority="high" loading="eager" />
           <span>GoldShore</span>
         </a>
         <nav class="gs-nav" aria-label="Primary">
