@@ -1,0 +1,38 @@
+
+/* Admin Dashboard Styles */
+.gs-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gs-space-1);
+}
+
+.gs-kpi strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gs-color-text);
+}
+
+.gs-helper {
+  font-size: 0.875rem;
+  color: var(--gs-color-subtle);
+}
+
+.gs-banner {
+  padding: var(--gs-space-3);
+  background: var(--gs-accent-soft);
+  border: 1px solid var(--gs-accent-soft);
+  border-radius: var(--gs-radius-sm);
+  color: var(--gs-color-text);
+  font-size: 0.9rem;
+  margin: var(--gs-space-4) 0;
+}
+
+.gs-form-actions {
+  display: flex;
+  gap: var(--gs-space-2);
+  margin-top: var(--gs-space-4);
+}
+
+.gs-table-card {
+  overflow: hidden;
+}

@@ -1,0 +1,2 @@
+# Mark pnpm-lock.yaml as binary to prevent text-based merge conflicts
+pnpm-lock.yaml binary
