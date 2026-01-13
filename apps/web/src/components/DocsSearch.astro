@@ -1,7 +1,4 @@
 ---
-let q = '';
-let results = [];
-
 // Note: In a real implementation, this would likely be a client-side component or use a framework specific way to handle state.
 // Since this is an Astro component, the script below handles the client-side logic.
 ---
@@ -17,23 +14,23 @@ let results = [];
   </div>
 </div>
 
-<script>
+<script lang="ts">
   const input = document.getElementById('docs-search-input');
   const resultsDiv = document.getElementById('results');
 
   // Optimization: Debounce function to prevent API calls on every keystroke
-  function debounce(func, wait) {
-    let timeout;
-    return function(...args) {
+  function debounce(func: Function, wait: number) {
+    let timeout: ReturnType<typeof setTimeout>;
+    return function(this: any, ...args: any[]) {
       const context = this;
       clearTimeout(timeout);
       timeout = setTimeout(() => func.apply(context, args), wait);
     };
   }
 
-  let searchController;
+  let searchController: AbortController | undefined;
 
-  async function runSearch(query) {
+  async function runSearch(query: string) {
     // Abort previous request if it exists
     if (searchController) {
       searchController.abort();
@@ -58,10 +55,22 @@ let results = [];
       if (resultsDiv) {
         resultsDiv.textContent = ''; // Clear previous results
 
-        results.forEach((r) => {
+        results.forEach((r: any) => {
             const a = document.createElement('a');
-            // Sentinel: Basic protection against javascript: URIs
-            if (r.url && !r.url.trim().toLowerCase().startsWith('javascript:')) {
+
+            // Sentinel: Stronger protection (Allowlist)
+            // Only allow http, https, mailto protocols.
+            // Relative paths resolve to the current origin (http/https), so they pass.
+            const isSafeUrl = (url: string) => {
+                try {
+                    const parsed = new URL(url, window.location.origin);
+                    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+                } catch (e) {
+                    return false;
+                }
+            };
+
+            if (r.url && isSafeUrl(r.url)) {
                 a.href = r.url;
             } else {
                 a.href = '#';
@@ -71,7 +80,7 @@ let results = [];
             resultsDiv.appendChild(a);
         });
       }
-    } catch (e) {
+    } catch (e: any) {
       if (e.name === 'AbortError') return; // Ignore aborted requests
       if (resultsDiv) {
         resultsDiv.textContent = '';
@@ -88,10 +97,10 @@ let results = [];
 
   if (input) {
     // Wait 300ms after user stops typing before searching
-    const debouncedSearch = debounce((e) => {
+    const debouncedSearch = debounce((e: Event) => {
       runSearch((e.target as HTMLInputElement).value);
     }, 300);
 
-    input.addEventListener('input', debouncedSearch);
+    input.addEventListener('input', debouncedSearch as EventListener);
   }
 </script>
