@@ -17,6 +17,9 @@ type Env = {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
+
 // Sentinel: Security Middleware
 // Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
 app.use('*', secureHeaders());
