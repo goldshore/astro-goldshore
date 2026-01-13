@@ -1,47 +1,78 @@
-name: Sentinel PR Scan
+name: SENTINEL (PR)
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
+  pull-requests: read
 
 jobs:
-  sentinel-pr:
+  sentinel-pr-check:
+    name: Run SENTINEL guardrails
     runs-on: ubuntu-latest
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
         with:
           node-version: 20
+      - name: Preview SENTINEL prompt
+        run: node ./.Jules/run-sentinel.jsagent
+  contents: write
+  pull-requests: write
+  issues: write
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    if: github.repository == 'goldshore/astro-goldshore' && github.event.pull_request.head.repo.full_name == 'goldshore/astro-goldshore'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Configure Git Identity
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
           run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
 
       - name: Run Sentinel (PR Mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "Jules Sentinel"
-          git config user.email "jules@goldshore.ai"
-          node .Jules/run-sentinel.jsagent --mode=pr
+          git config --global user.name "Jules Sentinel"
+          git config --global user.email "jules@goldshore.ai"
 
-      - name: Upload Sentinel report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .jules/guard/report.json
+      - name: Run Sentinel (PR Mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .Jules/run-sentinel.jsagent --mode=pr
