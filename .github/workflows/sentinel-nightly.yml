@@ -1,3 +1,29 @@
+name: SENTINEL (Nightly)
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sentinel-nightly:
+    name: Nightly SENTINEL scan
+    runs-on: ubuntu-latest
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+        with:
+          node-version: 20
+      - name: Preview nightly SENTINEL prompt
+        run: node ./.Jules/run-sentinel.jsagent
 name: Sentinel Nightly Scan
 on:
   schedule:
