@@ -1,5 +1,7 @@
 ---
 // apps/web/src/components/DocsSearch.astro
+// Note: In a real implementation, this would likely be a client-side component or use a framework specific way to handle state.
+// Since this is an Astro component, the script below handles the client-side logic.
 ---
 
 <form class="search-box" role="search" onsubmit="return false;">
@@ -178,6 +180,11 @@
   const loader = document.getElementById('search-loader');
   const status = document.getElementById('search-status');
 
+<script lang="ts">
+  const input = document.getElementById('docs-search-input');
+  const resultsDiv = document.getElementById('results');
+
+  // Optimization: Debounce function to prevent API calls on every keystroke
   function debounce(func: Function, wait: number) {
     let timeout: ReturnType<typeof setTimeout>;
     return function(this: any, ...args: any[]) {
@@ -263,6 +270,22 @@
             a.id = `search-result-${index}`;
             // Sentinel: Basic protection against javascript: URIs
             if (r.url && !r.url.trim().toLowerCase().startsWith('javascript:')) {
+        results.forEach((r: any) => {
+            const a = document.createElement('a');
+
+            // Sentinel: Stronger protection (Allowlist)
+            // Only allow http, https, mailto protocols.
+            // Relative paths resolve to the current origin (http/https), so they pass.
+            const isSafeUrl = (url: string) => {
+                try {
+                    const parsed = new URL(url, window.location.origin);
+                    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+                } catch (e) {
+                    return false;
+                }
+            };
+
+            if (r.url && isSafeUrl(r.url)) {
                 a.href = r.url;
             } else {
                 a.href = '#';
@@ -288,12 +311,23 @@
         resultsList.appendChild(li);
         showResults(true);
         updateStatus('Search failed.');
+    } catch (e: any) {
+      if (e.name === 'AbortError') return; // Ignore aborted requests
+      if (resultsDiv) {
+        resultsDiv.textContent = '';
+        const err = document.createElement('div');
+        err.className = 'search-error';
+        err.style.color = 'red';
+        err.style.marginTop = '0.5em';
+        err.textContent = 'Sorry, search failed. Please try again.';
+        resultsDiv.appendChild(err);
       }
       console.error("Search failed", e);
     }
   }
 
   if (input) {
+    // Wait 300ms after user stops typing before searching
     const debouncedSearch = debounce((e: Event) => {
       runSearch((e.target as HTMLInputElement).value);
     }, 300);
