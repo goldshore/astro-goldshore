@@ -110,9 +110,9 @@ try {
 
 // --- Specific Fixers ---
 
-function fixUnpinnedActions(fileContent) {
+function fixUnpinnedActions(content) {
     let modified = false;
-    let newContent = fileContent.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
+    let newContent = content.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
         if (tag.match(/^[0-9a-f]{40}$/)) return match;
         try {
             if (action.startsWith('./')) return match;
@@ -149,6 +149,12 @@ function fixAstroDuplicates(content) {
         });
     }
 
+    // Also check for double frontmatter if they were merged mechanically
+    const frontmatterRegex = /^---/gm;
+    const matches = content.match(frontmatterRegex);
+    if (matches && matches.length > 2) {
+        // This is tricky without parsing, but the instruction specifically mentions keeping ONE valid component
+        // relying on HEAD from conflict markers usually solves the worst cases.
     // 2. Handle duplicate content where file seems to have been pasted twice
     // Detected by multiple Frontmatter blocks (--- ... --- ... --- ... ---)
     // We expect EXACTLY 2 separators for 1 component.
@@ -203,6 +209,20 @@ function fixDeadTodos(content) {
 }
 
 function fixEnvTypes(content, filePath) {
+    let modified = false;
+    if ((filePath.endsWith('.ts') || filePath.endsWith('.js') || filePath.endsWith('.astro')) &&
+        (content.includes(': Env') || content.includes('<Env>'))) {
+
+        if (!content.includes('interface Env') && !content.includes('type Env') && !content.includes('import type { Env }')) {
+             const importStmt = "import type { Env } from '@cloudflare/workers-types';\n";
+             if (filePath.endsWith('.astro')) {
+                 if (content.startsWith('---')) {
+                     newContent = content.replace('---', '---\n' + importStmt);
+                 } else {
+                     newContent = '---\n' + importStmt + '---\n' + content;
+                 }
+                 return { modified: true, content: newContent };
+             } else {
     // Check if Env is used but not defined/imported
     if ((content.includes(': Env') || content.includes('<Env>')) &&
         !content.includes('interface Env') &&
@@ -249,10 +269,10 @@ function fixMissingImports(content, filePath) {
         try {
             const dir = path.dirname(filePath);
             const resolved = path.resolve(dir, importPath);
-            const extensions = ['.ts', '.js', '.astro', '.tsx', '.jsx', '.json', ''];
+            const extensions = ['.ts', '.js', '.astro', '.tsx', '.jsx', '.json', '/index.ts', ''];
             let exists = false;
             for (const ext of extensions) {
-                if (fs.existsSync(resolved + ext) || (fs.existsSync(resolved) && fs.existsSync(path.join(resolved, 'index' + ext)))) {
+                if (fs.existsSync(resolved + ext)) {
                     exists = true;
                     break;
                 }
@@ -290,6 +310,25 @@ if (!fs.existsSync('pnpm-lock.yaml')) {
 }
 console.log('✅ Lockfile present.');
 
+function resolveMechanicalConflicts() {
+    let resolvedFiles = [];
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+
+    // Lockfile conflict handling
+    if (conflictedFiles.includes('pnpm-lock.yaml') || fs.existsSync('pnpm-lock.yaml')) {
+        // If lockfile is conflicted, OR if we want to ensure hygiene, regenerate it.
+        // Prompt says: "Lockfile Conflicts: Remove... Delete node_modules... Run pnpm install"
+        if (conflictedFiles.includes('pnpm-lock.yaml')) {
+            log('Resolving lockfile conflict...', 'ACTION');
+            try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+            run('rm -rf node_modules', { ignoreError: true });
+            run('pnpm install', { ignoreError: true });
+            resolvedFiles.push('pnpm-lock.yaml');
+        }
+    }
+
+    for (const file of conflictedFiles) {
+        if (file === 'pnpm-lock.yaml') continue; // Handled above
 // --- Check 3: PR Scoping (Only runs if PR context is available via git diff) ---
 // We try to determine changed files against main
 try {
@@ -408,6 +447,9 @@ try {
         }
     }
 
+    // Auto-add generated stubs
+    run('git add .');
+
     return resolvedFiles;
 }
 
@@ -450,6 +492,7 @@ async function processPR(pr) {
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
+        // Rebase / Merge logic
         let rebaseSucceeded = false;
         try {
             run(`git fetch origin main`);
@@ -478,12 +521,33 @@ async function processPR(pr) {
                 // Merge to generate conflict markers for Sentinel to parse
                 run(`git merge origin/main`);
             } catch (mergeError) {
+                // Merge failed, conflicts present. Proceed to fix.
                 // Merge failed, conflicts exist.
             }
         }
 
         let fixedFiles = [];
 
+        if (fixedFiles.length > 0) {
+            // Commit fixes
+            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+        }
+
+        // Verify
+        try {
+            log('Verifying build...', 'INFO');
+            run('pnpm lint');
+            run('pnpm build');
+        } catch (e) {
+            log('Verification failed. Reverting changes...', 'ERROR');
+            run(`git reset --hard origin/${branch}`); // Revert to remote state
+
+            await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
+            await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
+                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification (lint/build). Handing off to Codex.`
+            });
+            reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
+            return;
         if (!rebaseSucceeded) {
              fixedFiles = resolveMechanicalConflicts();
 
