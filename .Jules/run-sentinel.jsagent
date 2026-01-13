@@ -42,6 +42,17 @@ function loadReport() {
     return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
 }
 
+function readReport() {
+    try {
+        if (fs.existsSync(REPORT_FILE)) {
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        }
+    } catch (e) {
+        log(`Failed to read report: ${e.message}`, 'WARN');
+    }
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
@@ -134,14 +145,11 @@ function fixUnpinnedActions(fileContent) {
     // Regex to find actions using tags (e.g. @v3) but excluding commit SHAs (40 hex chars)
     // Matches "uses: owner/repo@tag"
     let modified = false;
-    let newContent = fileContent.replace(/uses:\s+([^\s]+)@([^\s]+)/g, (match, action, tag) => {
-        // Skip if local action (./) or docker (docker://) - though regex handles common cases
-        if (action.startsWith('./') || action.startsWith('docker://')) return match;
-        // Skip if already a SHA (40 chars hex)
-        if (tag.match(/^[0-9a-f]{40}$/)) return match;
-
+    let newContent = fileContent.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
+        if (tag.match(/^[0-9a-f]{40}$/)) return match; // Already SHA
         try {
-            const remote = `https://github.com/${action}`;
+            if (action.startsWith('./')) return match; // Local action
+            const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
             // Use git ls-remote to find the SHA for the tag
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
@@ -161,6 +169,10 @@ function fixUnpinnedActions(fileContent) {
 }
 
 function fixAstroDuplicates(content) {
+    // Strategy: In a conflict between HEAD (feature branch) and main, we usually want to keep the feature branch's intent
+    // but ensure we don't end up with duplicate frontmatters.
+    // The instructions say: "When a file contains multiple frontmatter blocks... keep one valid Astro component".
+    // This regex looks for conflict markers.
     // Basic conflict marker resolution: choose HEAD (ours)
     const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?>>>>>>> [^\n]*/g;
     let modified = false;
@@ -169,7 +181,7 @@ function fixAstroDuplicates(content) {
     if (content.match(conflictRegex)) {
         newContent = content.replace(conflictRegex, (match, headContent) => {
             modified = true;
-            return headContent;
+            return headContent; // Keep HEAD version
         });
     }
 
@@ -219,7 +231,7 @@ function fixAstroDuplicates(content) {
 }
 
 function fixDeadTodos(content) {
-    // Remove TODOs that follow a return statement
+    // Removes TODOs that are likely dead code (e.g. after return)
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
     let newContent = content.replace(regex, (match, ret) => {
@@ -230,7 +242,7 @@ function fixDeadTodos(content) {
 }
 
 function fixEnvTypes(content, filePath) {
-    // Ensure Env is declared or imported if used
+    // Ensure Env is imported if used
     if (content.includes(': Env') || content.includes('<Env>')) {
         if (!content.includes('interface Env') && !content.includes('type Env') && !content.includes('import type { Env }')) {
              if (filePath.endsWith('.ts') || filePath.endsWith('.js') || filePath.endsWith('.astro')) {
@@ -325,11 +337,16 @@ function resolveMechanicalConflicts() {
     let resolvedFiles = [];
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
-    // 2.3 Lockfile Conflicts
-    // "Remove the lockfile... Delete node_modules... Run pnpm install"
-    log('Regenerating lockfile...', 'ACTION');
-    if (fs.existsSync('pnpm-lock.yaml')) {
-        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+    // 1. Lockfile conflicts: "Remove lockfile... Run pnpm install"
+    try {
+        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+        if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
+
+        log('Regenerating lockfile...', 'ACTION');
+        run('pnpm install', { ignoreError: true }); // ignore error to proceed, verification will catch issues
+        resolvedFiles.push('pnpm-lock.yaml');
+    } catch (e) {
+        log(`Lockfile regeneration failed: ${e.message}`, 'WARN');
     }
     run('rm -rf node_modules', { ignoreError: true });
     // pnpm install might take time, but is necessary
@@ -337,6 +354,8 @@ function resolveMechanicalConflicts() {
     // Actually, if install fails, build will fail.
     resolvedFiles.push('pnpm-lock.yaml');
 
+    // 2. Identify conflicted files from the failed merge
+    // Note: We are assuming we are in a state where conflicts exist in the working tree (after failed merge)
     // Identify conflicted files
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
@@ -347,12 +366,14 @@ function resolveMechanicalConflicts() {
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
+        // Astro Duplicates
         // 2.3 Astro Component Definitions / Duplicate HTML
         if (file.endsWith('.astro')) {
             const res = fixAstroDuplicates(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
 
+        // Unpinned Actions
         // 2.3 Unpinned GitHub Action Tags
         if (file.startsWith('.github/workflows/')) {
             const res = fixUnpinnedActions(content);
@@ -381,6 +402,7 @@ function resolveMechanicalConflicts() {
             resolvedFiles.push(file);
             run(`git add "${file}"`);
         }
+        // Stage the resolved file
         // Always add the file back to mark resolution (even if we just touched it, or if we want to accept ours?)
         // If we didn't modify it, the markers are still there!
         // So we only add if we modified (removed markers).
@@ -430,13 +452,18 @@ async function processPR(pr) {
     log(`Processing PR #${pr.number} (${branch})...`, 'INFO');
 
     try {
+        // 1. Checkout Branch
+        run(`git fetch origin ${branch}`);
+        run(`git checkout ${branch}`);
+
+        // 2. Rebase/Merge onto main
+        run(`git fetch origin main`);
         // 2.1 Checkout
         run(`git fetch origin ${branch}`);
         run(`git checkout ${branch}`);
 
         // 2.2 Rebase/Merge
         try {
-            run(`git fetch origin main`);
             run(`git rebase origin/main`);
             rebaseSucceeded = true;
         } catch (e) {
@@ -458,6 +485,22 @@ async function processPR(pr) {
 
             // Fallback to merge to expose conflict markers for resolution
             try {
+                // We merge to expose conflicts in the working tree for the fixer to handle
+                run(`git merge origin/main`);
+            } catch (mergeError) {
+                // Merge failed, conflicts are present. Proceed to resolve.
+            }
+        }
+
+        // 3. Resolve Mechanical Conflicts
+        const fixedFiles = resolveMechanicalConflicts();
+
+        if (fixedFiles.length > 0) {
+            run(`git add -A`);
+            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+        }
+
+        // 4. Verify Build & Lint
                 // Merge to generate conflict markers
                 run(`git merge origin/main`);
             } catch (mergeError) {
@@ -479,17 +522,13 @@ async function processPR(pr) {
             run('pnpm build');
         } catch (e) {
             log('Verification failed.', 'ERROR');
-            // Revert changes if verification failed?
-            // Instructions say: "If these fail, revert the automated changes and label the PR as needing manual attention."
-            // run('git reset --hard origin/' + branch); // Reset to remote state
-            // Actually, we just committed. We should reset.
-            // But if we reset, we lose the "mechanical fixes" that were valid?
-            // "revert the automated changes" means undo what we did.
-            // Since we pushed nothing yet, we can just stop.
+            // Revert changes
+            run(`git reset --hard origin/${branch}`);
 
+            // Label and Comment
             await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
             await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification (Build/Lint). Handing off to Codex.`
+                body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification (lint/build). Handing off to Codex.`
             });
             reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
             return;
@@ -575,6 +614,21 @@ async function runPRMode() {
     }
 
     if (prNumber) {
+        const pr = {
+            number: prNumber,
+            head: {
+                ref: branch,
+                repo: { full_name: `${OWNER}/${REPO}` }
+            }
+        };
+        // Fetch full PR details to check dirty state?
+        // The script is triggered on PR, so we assume we want to check/fix it.
+        // But if it's clean, we might just be doing hygiene (pinning).
+        // The instructions say "For each PR, check mergeable... dirty are candidates".
+        // In PR mode, we are usually triggered by a push. If it's dirty, we fix.
+        // Let's check dirty state via API to be safe, or just run logic.
+        // The processPR function checks out and rebases/merges. If clean, rebase works.
+        // Then resolveMechanicalConflicts runs.
         // Fetch PR object to match format
         const pr = await githubRequest('GET', `/repos/${OWNER}/${REPO}/pulls/${prNumber}`);
         // Only process if dirty?
