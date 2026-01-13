@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import DocsSearch from './DocsSearch.astro';
 
 const { currentSlug } = Astro.props;
 const pages = await getCollection('docs');
@@ -14,6 +15,11 @@ function getHref(slug: string) {
 
 <aside class="gs-card docs-sidebar" aria-label="Documentation navigation">
   <h3 class="section-title"><span aria-hidden="true">◎</span>Documentation</h3>
+  <div class="search-container">
+    <DocsSearch />
+  </div>
+
+  <h3 class="section-title"><span>◎</span>Documentation</h3>
   <ul class="docs-nav">
     {pages.map((p) => (
       <li>
@@ -31,19 +37,32 @@ function getHref(slug: string) {
 
 <style>
   .docs-sidebar { position: sticky; top: var(--gs-space-6); align-self: start; }
-  .docs-nav { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: var(--gs-space-2); }
+  .docs-nav { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: var(--gs-space-1); }
+
   .docs-nav a {
     color: var(--gs-color-subtle);
     text-decoration: none;
-    transition: color 0.2s ease, border-left-color 0.2s ease;
-    border-left: 2px solid transparent;
-    padding-left: 0.75rem;
+    transition: all 0.2s ease;
     display: block;
+    padding: var(--gs-space-1) var(--gs-space-2);
+    border-left: 2px solid transparent;
+    font-size: 0.95rem;
   }
-  .docs-nav a:hover { color: var(--gs-color-text); }
+
+  .docs-nav a:hover {
+    color: var(--gs-color-text);
+    background: rgba(255,255,255,0.03);
+  }
+
   .docs-nav a.active {
     color: #22d3ee;
     border-left-color: #22d3ee;
+    font-weight: 500;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.05) 0%, transparent 100%);
+  }
+
+  .search-container {
+    margin-bottom: var(--gs-space-6);
   }
 
   .section-title {

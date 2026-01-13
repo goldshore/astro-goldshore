@@ -12,6 +12,6 @@
 **Learning:** Standard HTML forms often lack explicit association between helper text and inputs, making them opaque to screen reader users. `aria-describedby` is the semantic bridge needed.
 **Action:** Enhanced Contact Form with `autocomplete` attributes for faster completion and linked helper text via `aria-describedby` for robust accessibility.
 
-## 2024-05-23 - Docs Sidebar Accessibility
-**Learning:** `aria-current="page"` is essential for navigation links to indicate the current page to screen readers, which visual cues (like color) alone do not convey.
-**Action:** Always include `aria-current="page"` on the active link in navigation components. Decorate pure visual indicators with `aria-hidden="true"`.
+## 2026-01-02 - Semantic Sticky Navigation
+**Learning:** Sidebars in long documentation pages often lose context when scrolling. Sticky positioning combined with explicit `aria-current="page"` provides persistent context for both sighted and screen reader users.
+**Action:** Apply `position: sticky` and `aria-current` to all sidebar navigation components to improve wayfinding.
