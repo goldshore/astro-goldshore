@@ -27,6 +27,7 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
       <header class="gs-header">
         <a class="gs-logo" href="/" aria-label="GoldShore home">
           <img src={logo.src} alt="GoldShore Penrose logo" width="36" height="36" />
+          <img src={logo} alt="GoldShore Penrose logo" width="36" height="36" fetchpriority="high" loading="eager" />
           <span>GoldShore</span>
         </a>
         <nav class="gs-nav" aria-label="Primary">
