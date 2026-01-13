@@ -112,12 +112,15 @@ try {
 
 function fixUnpinnedActions(content) {
     let modified = false;
-    let newContent = content.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
-        if (tag.match(/^[0-9a-f]{40}$/)) return match;
+    // Regex to capture uses: action@tag, avoiding SHAs (40 chars)
+    // We look for tags that are NOT 40 hex chars.
+    let newContent = fileContent.replace(/uses:\s+([^\s]+)@([^\s#]+)/g, (match, action, tag) => {
+        if (tag.match(/^[0-9a-f]{40}$/)) return match; // Already pinned
+
         try {
             if (action.startsWith('./')) return match;
             const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
-            // Use git ls-remote to find the SHA
+            // Use git ls-remote to find the SHA for the tag
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
                 const sha = output.split('\t')[0];
@@ -135,9 +138,7 @@ function fixUnpinnedActions(content) {
 }
 
 function fixAstroDuplicates(content) {
-    // 1. Resolve Git Conflict Markers by keeping HEAD
-    // Strategy: Favor the HEAD version (user changes) but clean up conflict markers.
-    // Ensure we don't end up with duplicate frontmatter if both sides added imports.
+    // Basic conflict marker resolution: choose HEAD (ours)
     const conflictRegex = /<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?>>>>>>> [^\n]*/g;
     let modified = false;
     let newContent = content;
@@ -195,10 +196,7 @@ function fixAstroDuplicates(content) {
 }
 
 function fixDeadTodos(content) {
-    // Regex to find TODOs that are unreachable or obsolete
-    // Example: return ...; // TODO: implement this
-    // Matches "return ...; // TODO ..."
-    // Removes TODOs that are unreachable or obsolete
+    // Remove TODOs that follow a return statement
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
     let newContent = content.replace(regex, (match, ret) => {
@@ -314,6 +312,12 @@ function resolveMechanicalConflicts() {
     let resolvedFiles = [];
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
+    // Identify conflicted files
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+
+    // Lockfile Conflicts
+    if (conflictedFiles.includes('pnpm-lock.yaml')) {
+        log('Resolving lockfile conflict...', 'ACTION');
     // Lockfile conflict handling
     if (conflictedFiles.includes('pnpm-lock.yaml') || fs.existsSync('pnpm-lock.yaml')) {
         // If lockfile is conflicted, OR if we want to ensure hygiene, regenerate it.
@@ -371,37 +375,18 @@ try {
         }
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
-        resolvedFiles.push('pnpm-lock.yaml');
         run('git add pnpm-lock.yaml');
-    }
-    run('rm -rf node_modules', { ignoreError: true });
-    run('pnpm install', { ignoreError: true });
-    resolvedFiles.push('pnpm-lock.yaml');
-
-    // 2. Unpinned Actions (Scan all workflows)
-    if (fs.existsSync('.github/workflows')) {
-        const workflows = fs.readdirSync('.github/workflows').filter(f => f.endsWith('.yml') || f.endsWith('.yaml'));
-        for (const wf of workflows) {
-            const wfPath = path.join('.github/workflows', wf);
-            const content = fs.readFileSync(wfPath, 'utf8');
-            const res = fixUnpinnedActions(content);
-            if (res.modified) {
-                fs.writeFileSync(wfPath, res.content);
-                resolvedFiles.push(wfPath);
-                run(`git add "${wfPath}"`);
-            }
-        }
+        resolvedFiles.push('pnpm-lock.yaml');
     }
 
-    // 3. Other Conflicts
     for (const file of conflictedFiles) {
-        if (file === 'pnpm-lock.yaml') continue;
+        if (file === 'pnpm-lock.yaml') continue; // Handled
         if (!fs.existsSync(file)) continue;
 
         let content = fs.readFileSync(file, 'utf8');
         let fileModified = false;
 
-        // Astro Duplicates
+        // Apply Fixes
         if (file.endsWith('.astro')) {
             const res = fixAstroDuplicates(content);
             if (res.modified) { content = res.content; fileModified = true; }
@@ -443,6 +428,12 @@ try {
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
+            run(`git add "${file}"`);
+        }
+        // Always add the file back to mark resolution (even if we just touched it, or if we want to accept ours?)
+        // If we didn't modify it, the markers are still there!
+        // So we only add if we modified (removed markers).
+        if (fileModified) {
             run(`git add "${file}"`);
         }
     }
@@ -517,6 +508,10 @@ async function processPR(pr) {
 
             // Fallback to merge to expose conflict markers for resolution
             try {
+                // We fallback to merge to expose conflicts for mechanical resolution
+                run(`git merge origin/main`);
+            } catch (mergeError) {
+                // Merge failed, conflicts exist. Proceed to resolve.
                 // Merge main to expose conflicts in a standard way
                 // Merge to generate conflict markers for Sentinel to parse
                 run(`git merge origin/main`);
@@ -528,8 +523,15 @@ async function processPR(pr) {
 
         let fixedFiles = [];
 
-        if (fixedFiles.length > 0) {
-            // Commit fixes
+        // Check if any conflicts remain
+        const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+
+        if (remainingConflicts) {
+             log(`Unresolved conflicts in: ${remainingConflicts.replace(/\n/g, ', ')}`, 'WARN');
+             // We can't commit if conflicts remain.
+             // Verification will fail.
+        } else if (fixedFiles.length > 0) {
+            run(`git add .`); // Ensure all changes including new modules are staged
             run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
         }
 
@@ -601,17 +603,7 @@ async function processPR(pr) {
 
 async function runSweep() {
     const report = loadReport();
-    // Clean old report data if new run?
-    // Instructions: "reuses the existing sentinel report file to avoid duplication."
-    // Probably means invalidation or appending. But JSON structure has timestamp.
-    // Let's update timestamp and keep old logs if we want history, or just use file presence?
-    // "Update them if they exist instead of generating duplicates." - referring to FILES (workflows).
-    // "Ensure the script checks for and reuses the existing sentinel report file to avoid duplication."
-    // This probably refers to not creating a new report file name (like report-1.json), but overwriting or updating `report.json`.
-    // My implementation `writeReport` overwrites.
-    // But `loadReport` allows us to potentially append or read previous state.
-    // For now, I'll update the timestamp.
-    report.timestamp = new Date().toISOString();
+    report.lastRun = new Date().toISOString();
 
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} candidate PRs.`);
@@ -622,6 +614,10 @@ async function runSweep() {
 }
 
 async function runPRMode() {
+    const report = loadReport();
+    report.lastRun = new Date().toISOString();
+
+    const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
     const prNumber = process.env.GITHUB_EVENT_PATH ? require(process.env.GITHUB_EVENT_PATH).pull_request.number : null;
     if (prNumber) {
         const pr = await githubRequest('GET', `/repos/${OWNER}/${REPO}/pulls/${prNumber}`);
