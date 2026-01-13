@@ -31,6 +31,9 @@ function loadReport() {
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
+        // Read existing report if possible to merge/update?
+        // For now, we overwrite as per daily run logic, but the instruction mentions "reuse".
+        // Since this script runs as a single job, overwriting is likely intended for the current run's output.
         fs.writeFileSync(REPORT_FILE, JSON.stringify(data, null, 2));
     } catch (e) {
         log(`Failed to write report: ${e.message}`, 'WARN');
@@ -114,6 +117,7 @@ function fixUnpinnedActions(fileContent) {
         try {
             if (action.startsWith('./')) return match;
             const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
+            // Use git ls-remote to find the SHA
             const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
             if (output) {
                 const sha = output.split('\t')[0];
@@ -185,6 +189,8 @@ function fixAstroDuplicates(content) {
 }
 
 function fixDeadTodos(content) {
+    // Regex to find TODOs that are unreachable or obsolete
+    // Example: return ...; // TODO: implement this
     // Matches "return ...; // TODO ..."
     // Removes TODOs that are unreachable or obsolete
     const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
@@ -327,6 +333,7 @@ try {
         run('rm -rf node_modules', { ignoreError: true });
         run('pnpm install', { ignoreError: true });
         resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
     }
     run('rm -rf node_modules', { ignoreError: true });
     run('pnpm install', { ignoreError: true });
@@ -530,6 +537,24 @@ async function processPR(pr, reportObj) {
         }
 
         if (fixedFiles.length > 0) {
+            run(`git add .`);
+            try {
+                run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+            } catch (e) {
+                 // Nothing to commit?
+                 if (run('git diff --staged --quiet', { ignoreError: true }) !== '') {
+                     // Changes exist
+                 } else {
+                     log('No changes to commit after resolution.', 'INFO');
+                     return;
+                 }
+            }
+        } else {
+            // No files fixed, but maybe conflicts persist?
+            const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+            if (remainingConflicts) {
+                throw new Error('Mechanical resolution failed. Semantic conflicts remain.');
+            }
              // Commit changes
              // "Commit Each Fix (if reasonable) or batch them into a single..."
              // We batch.
