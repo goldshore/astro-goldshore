@@ -57,6 +57,7 @@ let results = [];
 
       if (resultsDiv) {
         resultsDiv.textContent = ''; // Clear previous results
+        const fragment = document.createDocumentFragment();
 
         results.forEach((r) => {
             const a = document.createElement('a');
@@ -68,8 +69,9 @@ let results = [];
                 console.warn('Blocked potentially unsafe URL in search results');
             }
             a.textContent = r.title; // Sentinel: Prevent XSS by using textContent instead of innerHTML
-            resultsDiv.appendChild(a);
+            fragment.appendChild(a);
         });
+        resultsDiv.appendChild(fragment);
       }
     } catch (e) {
       if (e.name === 'AbortError') return; // Ignore aborted requests
