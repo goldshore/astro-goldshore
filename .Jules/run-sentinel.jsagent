@@ -3,6 +3,77 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+function log(msg, type = 'INFO') {
+    const icons = { INFO: 'ℹ️', SUCCESS: '✅', WARN: '⚠️', ERROR: '❌', ACTION: '🔧' };
+    console.log(`${icons[type] || ''} [${new Date().toISOString()}] ${msg}`);
+}
+
+function run(cmd, options = {}) {
+    try {
+        return execSync(cmd, { encoding: 'utf8', stdio: 'pipe', ...options }).trim();
+    } catch (e) {
+        if (options.ignoreError) return null;
+        throw new Error(`Command failed: ${cmd}\n${e.message}\n${e.stderr}`);
+    }
+}
+
+function loadReport() {
+    if (fs.existsSync(REPORT_FILE)) {
+        try {
+            return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+        } catch (e) {
+            log(`Failed to load existing report: ${e.message}`, 'WARN');
+        }
+    }
+    return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+}
+
+function writeReport(data) {
+    try {
+        fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
+        fs.writeFileSync(REPORT_FILE, JSON.stringify(data, null, 2));
+    } catch (e) {
+        log(`Failed to write report: ${e.message}`, 'WARN');
+    }
+}
+
+async function githubRequest(method, path, body = null) {
+    if (!GITHUB_TOKEN) {
+        throw new Error('GITHUB_TOKEN is required for API access.');
+    }
+    return new Promise((resolve, reject) => {
+        const options = {
+            hostname: 'api.github.com',
+            path: path,
+            method: method,
+            headers: {
+                'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                'User-Agent': 'Sentinel-Agent',
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => data += chunk);
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (e) {
+                        resolve(data);
+                    }
+                } else {
+                    reject(new Error(`GitHub API Error ${res.statusCode}: ${data}`));
+                }
+            });
+        });
+
+        req.on('error', (e) => reject(e));
+        if (body) req.write(JSON.stringify(body));
+        req.end();
+    });
 console.log('Running Jules Sentinel Checks...');
 
 const RULES = {
@@ -152,6 +223,23 @@ console.log('✅ Lockfile present.');
 try {
     const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().trim().split('\n').filter(Boolean);
 
+    // Identify conflicted files first
+    const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
+    const lockfileConflicted = conflictedFiles.includes('pnpm-lock.yaml');
+
+    // Lockfile Conflicts: Remove and regenerate if conflicted
+    if (lockfileConflicted) {
+        log('Regenerating lockfile due to conflicts...', 'ACTION');
+        if (fs.existsSync('pnpm-lock.yaml')) {
+            try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+        }
+        run('rm -rf node_modules', { ignoreError: true });
+        run('pnpm install', { ignoreError: true });
+        resolvedFiles.push('pnpm-lock.yaml');
+    }
+
+    for (const file of conflictedFiles) {
+        if (file === 'pnpm-lock.yaml') continue; // Already handled
     // Get list of conflicted files
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
@@ -300,7 +388,7 @@ async function processPR(pr, reportObj) {
 }
 
 async function runSweep() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport(); // Reuse existing report
     const dirtyPRs = await fetchOpenPRs();
     log(`Found ${dirtyPRs.length} dirty PRs.`);
 
@@ -311,7 +399,7 @@ async function runSweep() {
 }
 
 async function runPRMode() {
-    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    const report = loadReport(); // Reuse existing report
     const branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
 
     // In PR mode, we might not have the PR number easily if not passed.

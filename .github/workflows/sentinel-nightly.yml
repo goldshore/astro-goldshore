@@ -38,6 +38,10 @@ permissions:
 jobs:
   sentinel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +49,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
           version: 8
           run_install: false
