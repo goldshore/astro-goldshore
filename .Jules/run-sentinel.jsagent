@@ -20,6 +20,10 @@ function log(msg, type = 'INFO') {
     console.log(`${icons[type] || ''} [${new Date().toISOString()}] ${msg}`);
 }
 
+/**
+ * Executes a shell command safely.
+ * For complex commands involving untrusted input, use execFileSafe instead.
+ */
 function run(cmd, options = {}) {
     try {
         // Use stdio: 'pipe' to capture output, unless we want to silence it
@@ -31,6 +35,19 @@ function run(cmd, options = {}) {
     }
 }
 
+/**
+ * Executes a command without a shell, avoiding injection vulnerabilities.
+ * @param {string} file The executable to run
+ * @param {string[]} args List of arguments
+ * @param {object} options
+ */
+function execFileSafe(file, args, options = {}) {
+    try {
+        return execFileSync(file, args, { encoding: 'utf8', stdio: 'pipe', ...options }).trim();
+    } catch (e) {
+        if (options.ignoreError) return null;
+        throw new Error(`Command failed: ${file} ${args.join(' ')}\n${e.message}\n${e.stderr}`);
+    }
 function loadReport() {
     try {
         if (fs.existsSync(REPORT_FILE)) {
@@ -71,10 +88,17 @@ function loadReport() {
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
-        // Read existing report if possible to merge/update?
-        // For now, we overwrite as per daily run logic, but the instruction mentions "reuse".
-        // Since this script runs as a single job, overwriting is likely intended for the current run's output.
-        fs.writeFileSync(REPORT_FILE, JSON.stringify(data, null, 2));
+        let report = data;
+        if (fs.existsSync(REPORT_FILE)) {
+             try {
+                 const existing = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+                 if (existing.resolved) report.resolved = [...existing.resolved, ...data.resolved];
+                 if (existing.failures) report.failures = [...existing.failures, ...data.failures];
+             } catch(err) {
+                 log(`Could not read existing report, overwriting: ${err.message}`, 'WARN');
+             }
+        }
+        fs.writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2));
     } catch (e) {
         log(`Failed to write report: ${e.message}`, 'WARN');
     }
@@ -171,13 +195,25 @@ function fixUnpinnedActions(fileContent) {
     // Regex to find actions using tags (e.g. @v3) but excluding commit SHAs (40 hex chars)
     // Matches "uses: owner/repo@tag"
     let modified = false;
+    // Regex matches typical usage: uses: actions/checkout@v4
     let newContent = fileContent.replace(/uses:\s+([^\s]+)@(v[^\s]+)/g, (match, action, tag) => {
-        if (tag.match(/^[0-9a-f]{40}$/)) return match; // Already SHA
+        if (tag.match(/^[0-9a-f]{40}$/)) return match;
+
         try {
-            if (action.startsWith('./')) return match; // Local action
-            const remote = `https://github.com/${action.split('/')[0]}/${action.split('/')[1]}`;
-            // Use git ls-remote to find the SHA for the tag
-            const output = run(`git ls-remote ${remote} ${tag}`, { ignoreError: true });
+            // Strictly validate action name to prevent injection/abuse
+            // Allows: owner/repo, owner/repo/path, or ./local/path
+            if (!/^[\w-]+\/[\w-]+(\/[\w-]+)*$/.test(action) && !action.startsWith('./')) {
+                log(`Skipping unsafe action name: ${action}`, 'WARN');
+                return match;
+            }
+
+            if (action.startsWith('./')) return match;
+
+            const remote = `https://github.com/${action}`;
+
+            // Use execFileSafe to avoid shell injection
+            const output = execFileSafe('git', ['ls-remote', remote, tag], { ignoreError: true });
+
             if (output) {
                 // Output format: <SHA>\trefs/tags/<tag>
                 const sha = output.split('\t')[0];
@@ -187,7 +223,7 @@ function fixUnpinnedActions(fileContent) {
                 }
             }
         } catch (e) {
-            log(`Failed to resolve SHA for ${action}@${tag}`, 'WARN');
+            log(`Failed to resolve SHA for ${action}@${tag}: ${e.message}`, 'WARN');
         }
         return match;
     });
@@ -257,10 +293,9 @@ function fixAstroDuplicates(content) {
 }
 
 function fixDeadTodos(content) {
-    // Removes TODOs that are likely dead code (e.g. after return)
-    const regex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
+    const inlineTodoRegex = /(return\s+[^;]+;)\s*\/\/\s*TODO[^\n]*/g;
     let modified = false;
-    let newContent = content.replace(regex, (match, ret) => {
+    let newContent = content.replace(inlineTodoRegex, (match, ret) => {
         modified = true;
         return ret;
     });
@@ -300,23 +335,37 @@ function fixMissingImports(content, filePath) {
     let modified = false;
     let createdFiles = [];
     let match;
+    let createdFiles = [];
 
     // Use loop to find all imports
     while ((match = importRegex.exec(content)) !== null) {
         const importPath = match[1];
+
+        // Strict validation of import path to prevent directory traversal or injection in file operations
+        // Allow relative paths starting with . and containing alphanumeric, -, _, /
+        if (!/^(\.\/|\.\.\/)[\w\-\/.]+$/.test(importPath)) {
+            log(`Skipping unsafe or complex import path: ${importPath}`, 'WARN');
+            continue;
+        }
+
         try {
             const dir = path.dirname(filePath);
             const resolvedBase = path.resolve(dir, importPath);
 
-            // Check if file exists with common extensions
-            const extensions = ['.ts', '.js', '.astro', '.tsx', '.jsx', '.json', '.mjs', ''];
+            // Ensure resolved path is within the project root to prevent writing outside
+            if (!resolvedBase.startsWith(process.cwd())) {
+                 log(`Skipping import path resolving outside root: ${importPath}`, 'WARN');
+                 continue;
+            }
+
+            const extensions = ['.ts', '.js', '.astro', '.tsx', '.jsx', '.json', '.d.ts', ''];
             let exists = false;
+
             for (const ext of extensions) {
                 if (fs.existsSync(resolvedBase + ext)) {
                     exists = true;
                     break;
                 }
-                // Check for index file
                 if (fs.existsSync(path.join(resolvedBase, 'index' + ext))) {
                     exists = true;
                     break;
@@ -324,11 +373,15 @@ function fixMissingImports(content, filePath) {
             }
 
             if (!exists) {
-                // Does not exist. Create it.
-                // Determine extension: if import has ext, use it. If not, default to .ts
                 let newFile = resolvedBase;
                 if (!path.extname(newFile)) {
                     newFile += '.ts';
+                }
+
+                // Double check extension to be safe
+                if (!['.ts', '.js', '.astro', '.tsx', '.jsx', '.json', '.d.ts'].includes(path.extname(newFile))) {
+                    log(`Skipping creation of file with unsafe extension: ${newFile}`, 'WARN');
+                    continue;
                 }
 
                 log(`Creating missing module: ${newFile}`, 'ACTION');
@@ -338,6 +391,7 @@ function fixMissingImports(content, filePath) {
                 const stubContent = '// Sentinel: Generated stub for missing module\nexport {};\n';
                 fs.writeFileSync(newFile, stubContent);
                 modified = true;
+                createdFiles.push(newFile);
             }
         } catch (e) {
             log(`Error checking import ${importPath}: ${e.message}`, 'WARN');
@@ -363,7 +417,15 @@ function resolveMechanicalConflicts() {
     let resolvedFiles = [];
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
-    // 1. Lockfile conflicts: "Remove lockfile... Run pnpm install"
+    const conflictedFilesOutput = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+
+
+    if (conflictedFiles.includes('pnpm-lock.yaml')) {
+        log('Resolving lockfile conflict...', 'ACTION');
+        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
+    }
+    run('rm -rf node_modules', { ignoreError: true });
+    // This might fail if package.json is invalid, but we try
     try {
         if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
         if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
@@ -372,6 +434,7 @@ function resolveMechanicalConflicts() {
         log('Regenerating lockfile...', 'ACTION');
         run('pnpm install', { ignoreError: true }); // ignore error to proceed, verification will catch issues
         resolvedFiles.push('pnpm-lock.yaml');
+        execFileSafe('git', ['add', 'pnpm-lock.yaml']);
     } catch (e) {
         log(`Lockfile regeneration failed: ${e.message}`, 'WARN');
     }
@@ -388,7 +451,7 @@ function resolveMechanicalConflicts() {
 
     // 2. Resolve text-based conflicts
     for (const file of conflictedFiles) {
-        if (file === 'pnpm-lock.yaml') continue; // Handled
+        if (file === 'pnpm-lock.yaml') continue;
         if (!fs.existsSync(file)) continue;
 
         let content = fs.readFileSync(file, 'utf8');
@@ -401,9 +464,7 @@ function resolveMechanicalConflicts() {
             if (res.modified) { content = res.content; fileModified = true; }
         }
 
-        // Unpinned Actions
-        // 2.3 Unpinned GitHub Action Tags
-        if (file.startsWith('.github/workflows/')) {
+        if (file.startsWith('.github/workflows/') && (file.endsWith('.yml') || file.endsWith('.yaml'))) {
             const res = fixUnpinnedActions(content);
             if (res.modified) { content = res.content; fileModified = true; }
         }
@@ -420,36 +481,17 @@ function resolveMechanicalConflicts() {
         // Note: fixMissingImports creates files, doesn't necessarily modify the current file's content
         // unless we need to adjust the import path (not implemented here, assumes creation is enough)
         const resImports = fixMissingImports(content, file);
-        if (resImports.modified) {
-             // Side effect: created files. We should add them to git?
-             // run('git add .'); // We do git add at the end
+        if (resImports.createdFiles && resImports.createdFiles.length > 0) {
+            resImports.createdFiles.forEach(f => {
+                execFileSafe('git', ['add', f]);
+                resolvedFiles.push(path.relative(process.cwd(), f));
+            });
         }
 
         if (fileModified) {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
-            run(`git add "${file}"`);
-        }
-    }
-
-    // 3. Lockfile / Hygiene
-    // Always run this as the last step to ensure consistency and fix any lockfile conflicts
-    log('Regenerating lockfile...', 'ACTION');
-    try {
-        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
-        run('rm -rf node_modules', { ignoreError: true });
-        run('pnpm install', { ignoreError: true });
-        resolvedFiles.push('pnpm-lock.yaml');
-        run('git add pnpm-lock.yaml');
-    } catch (e) {
-        log(`Lockfile regeneration failed: ${e.message}`, 'WARN');
-        }
-        // Stage the resolved file
-        // Always add the file back to mark resolution (even if we just touched it, or if we want to accept ours?)
-        // If we didn't modify it, the markers are still there!
-        // So we only add if we modified (removed markers).
-        if (fileModified) {
-            run(`git add "${file}"`);
+            execFileSafe('git', ['add', file]);
         }
 
         // Mark as resolved in git
@@ -494,9 +536,20 @@ async function processPR(pr) {
     log(`Processing PR #${pr.number} (${branch})...`, 'INFO');
 
     try {
+        // Validate branch name before usage (basic safety)
+        if (!/^[\w/.-]+$/.test(branch)) {
+            throw new Error('Invalid branch name');
+        }
+
         // 1. Checkout Branch
-        run(`git fetch origin ${branch}`);
-        run(`git checkout ${branch}`);
+        execFileSafe('git', ['fetch', 'origin', branch]);
+        execFileSafe('git', ['checkout', branch]);
+
+        // 2. Rebase/Merge onto main
+        execFileSafe('git', ['fetch', 'origin', 'main']);
+        // Ensure clean slate
+        run('git reset --hard HEAD');
+        run('git clean -fd');
 
         // 2. Rebase/Merge onto main
         run(`git fetch origin main`);
@@ -506,58 +559,39 @@ async function processPR(pr) {
 
         // 2.2 Rebase/Merge
         try {
-            run(`git rebase origin/main`);
-            rebaseSucceeded = true;
+            execFileSafe('git', ['rebase', 'origin/main']);
         } catch (e) {
-            log('Rebase failed, attempting to resolve...', 'WARN');
-            rebaseFailed = true;
-            // We are now in a rebase state with conflicts
-        }
+            log('Rebase failed due to conflicts. Attempting to resolve...', 'WARN');
+            execFileSafe('git', ['rebase', '--abort'], { ignoreError: true });
 
-        // If rebase failed, we are in detached HEAD or mid-rebase state
-        // The instructions say: "If rebase fails due to conflicts, proceed to fix them; otherwise, skip to step 5."
-        // "Resolve Mechanical Conflicts"
-
-        // If rebase failed, we can try to fix conflicts in the rebase process.
-        // However, scripting git rebase --continue is tricky because it might stop multiple times.
-        // Easier approach: abort rebase, merge main, and fix conflicts there.
-        if (rebaseFailed) {
-            log('Rebase failed due to conflicts. Attempting resolution...', 'WARN');
-            run(`git rebase --abort`, { ignoreError: true });
-
-            // Fallback to merge to expose conflict markers for resolution
             try {
-                // We merge to expose conflicts in the working tree for the fixer to handle
-                run(`git merge origin/main`);
+                execFileSafe('git', ['merge', 'origin/main']);
             } catch (mergeError) {
-                // Merge failed, conflicts are present. Proceed to resolve.
+                log('Merge failed as expected, proceeding to fix conflicts.', 'INFO');
             }
         }
 
         // 3. Resolve Mechanical Conflicts
         const fixedFiles = resolveMechanicalConflicts();
 
-        if (fixedFiles.length > 0) {
-            run(`git add -A`);
-            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
+        // 4. Ensure dependencies are fresh before build
+        // Even if lockfile wasn't conflicted, rebase/merge might have changed it or package.json
+        log('Refreshing dependencies...', 'INFO');
+        run('pnpm install --frozen-lockfile', { ignoreError: true });
+
+        const remainingConflicts = run('git diff --name-only --diff-filter=U', { ignoreError: true });
+        if (remainingConflicts) {
+             log(`Unresolved conflicts remain in: ${remainingConflicts.replace(/\n/g, ', ')}`, 'WARN');
         }
 
-        // 4. Verify Build & Lint
-                // Merge to generate conflict markers
-                run(`git merge origin/main`);
-            } catch (mergeError) {
-                // Expected to fail if there are conflicts
+        if (fixedFiles.length > 0) {
+            const staged = run('git diff --cached --name-only', { ignoreError: true });
+            if (staged) {
+                execFileSafe('git', ['commit', '-m', 'Sentinel: resolve merge conflicts and pin actions']);
             }
         }
 
-        // 2.3 Resolve Mechanical Conflicts
-        const fixedFiles = resolveMechanicalConflicts();
-
-        if (fixedFiles.length > 0) {
-            run(`git commit -m "Sentinel: resolve merge conflicts and pin actions"`);
-        }
-
-        // 2.4 Verify Build & Lint
+        // 5. Verify Build & Lint
         try {
             log('Verifying build...', 'INFO');
             run('pnpm lint');
@@ -573,6 +607,8 @@ async function processPR(pr) {
                 body: `🛡️ **Sentinel Report**\n\nAutomated resolution failed verification (lint/build). Handing off to Codex.`
             });
             reportObj.failures.push({ pr: pr.number, reason: 'Verification failed' });
+
+            execFileSafe('git', ['reset', '--hard', `origin/${branch}`]);
             return;
         if (!rebaseSucceeded) {
              fixedFiles = resolveMechanicalConflicts();
@@ -601,26 +637,26 @@ async function processPR(pr) {
             log('Rebase succeeded, skipping conflict resolution and verification.', 'INFO');
         }
 
-        // 2.5 Push
+        // 6. Push
         log('Pushing changes...', 'ACTION');
-        run(`git push --force-with-lease origin ${branch}`);
+        execFileSafe('git', ['push', '--force-with-lease', 'origin', branch]);
 
-        // 2.6 Document
+        // 7. Document
         await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-            body: `🛡️ **Sentinel Report**\n\nResolved merge conflicts and applied hygiene fixes.\n\n**Files touched:**\n${rebaseSucceeded ? '- (Rebase clean)' : fixedFiles.map(f => `- ${f}`).join('\n')}`
+            body: `🛡️ **Sentinel Report**\n\nResolved merge conflicts and applied hygiene fixes.\n\n**Files touched:**\n${fixedFiles.map(f => `- ${f}`).join('\n')}\n\nBuild and Lint passed.`
         });
         reportObj.resolved.push({ pr: pr.number, files: fixedFiles });
         writeReport(reportObj);
 
     } catch (e) {
         log(`Failed to process ${branch}: ${e.message}`, 'ERROR');
-        // 3. Tag Complex Conflicts for Codex
-        await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
-        await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/comments`, {
-            body: `🛡️ **Sentinel Report**\n\nFailed to process conflicts. Handing off to Codex.\n\nError: ${e.message}`
-        });
+        try {
+             await githubRequest('POST', `/repos/${OWNER}/${REPO}/issues/${pr.number}/labels`, { labels: ['needs-codex'] });
+        } catch(apiErr) {}
         reportObj.failures.push({ pr: pr.number, reason: e.message });
-        writeReport(reportObj);
+
+        try { execFileSafe('git', ['rebase', '--abort'], { ignoreError: true }); } catch(err){}
+        try { execFileSafe('git', ['merge', '--abort'], { ignoreError: true }); } catch(err){}
     }
 }
 
@@ -645,6 +681,11 @@ async function runSweep() {
 }
 
 async function runPRMode() {
+    const report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+
+    let prNumber;
+    let branch;
+
     const report = loadReport();
     if (!report.resolved) report.resolved = [];
     if (!report.failures) report.failures = [];
@@ -659,6 +700,28 @@ async function runPRMode() {
         try {
             const event = require(process.env.GITHUB_EVENT_PATH);
             prNumber = event.pull_request ? event.pull_request.number : null;
+            branch = event.pull_request ? event.pull_request.head.ref : null;
+        } catch(e) {}
+    }
+
+    if (!branch) {
+         branch = process.env.GITHUB_HEAD_REF || run('git rev-parse --abbrev-ref HEAD');
+    }
+
+    if (prNumber) {
+        const pr = {
+            number: prNumber,
+            head: { ref: branch, repo: { full_name: `${OWNER}/${REPO}` } }
+        };
+
+        const detailed = await githubRequest('GET', `/repos/${OWNER}/${REPO}/pulls/${prNumber}`);
+        if (detailed.mergeable_state === 'dirty') {
+            await processPR(pr, report);
+        } else {
+            log(`PR #${prNumber} is not dirty (${detailed.mergeable_state}). Skipping conflict resolution.`, 'INFO');
+        }
+    } else {
+        log('Could not determine PR number. Running in local/test mode?', 'WARN');
         } catch(e) {}
     }
 
