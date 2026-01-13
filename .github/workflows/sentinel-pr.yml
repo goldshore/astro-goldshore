@@ -1,4 +1,4 @@
-name: Sentinel PR Scan
+name: Sentinel PR Check
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -9,15 +9,23 @@ permissions:
   issues: write
 
 jobs:
-  sentinel-pr:
+  sentinel-pr-check:
+    name: Run SENTINEL guardrails
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
-          fetch-depth: 0
-
+            fetch-depth: 0
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+            version: 8
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -36,13 +44,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "Jules Sentinel"
-          git config user.email "jules@goldshore.ai"
-          node .Jules/run-sentinel.jsagent --mode=pr
-
-      - name: Upload Sentinel report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: .jules/guard/report.json
+            git config user.name "Jules Sentinel"
+            git config user.email "jules@goldshore.ai"
+            node .Jules/run-sentinel.jsagent
