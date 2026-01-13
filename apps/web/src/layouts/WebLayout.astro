@@ -1,6 +1,6 @@
 ---
 import '@goldshore/theme';
-import logo from '@goldshore/theme/assets/logo.svg';
+import logo from '../assets/logo.svg';
 import { GSButton } from '@goldshore/ui';
 
 const navLinks = [
@@ -8,7 +8,8 @@ const navLinks = [
   { href: '/about', label: 'About' },
   { href: '/services', label: 'Services' },
   { href: '/team', label: 'Team' },
-  { href: '/contact', label: 'Contact' }
+  { href: '/contact', label: 'Contact' },
+  { href: '/apps/risk-radar', label: 'Risk Radar' }
 ];
 
 const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.url.pathname } = Astro.props;
@@ -51,7 +52,7 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
           <div class="gs-grid columns-2">
             <div>
               <div class="gs-logo" style="gap: var(--gs-space-2);">
-                <img src={logo} alt="GoldShore logo" width="32" height="32" loading="lazy" decoding="async" />
+                <img src={logo.src} alt="GoldShore logo" width="32" height="32" loading="lazy" decoding="async" />
                 <span>GoldShore AI</span>
               </div>
               <p>Applied intelligence, resilient infrastructure, and responsive operations.</p>
