@@ -48,6 +48,9 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run Sentinel (PR Mode)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
