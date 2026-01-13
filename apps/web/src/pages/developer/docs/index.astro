@@ -1,10 +1,15 @@
 ---
 import DocsLayout from '../../../layouts/DocsLayout.astro';
+import DocsSearch from '../../../components/DocsSearch.astro';
 ---
 
 <DocsLayout title="GoldShore Documentation">
   <h1>Overview</h1>
   <p>Everything begins with the API.</p>
+
+  <div style="margin-bottom: 2rem;">
+    <DocsSearch />
+  </div>
 
   <h2 id="api">API Base</h2>
   <pre>GET {import.meta.env.PUBLIC_API}/system/info</pre>

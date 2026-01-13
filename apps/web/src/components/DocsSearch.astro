@@ -6,14 +6,15 @@ let results = [];
 // Since this is an Astro component, the script below handles the client-side logic.
 ---
 
-<div class="search-box">
+<div class="search-box" role="search">
   <input
     type="search"
     placeholder="Search docs…"
     id="docs-search-input"
+    aria-label="Search documentation"
   />
 
-  <div id="results">
+  <div id="results" aria-live="polite">
   </div>
 </div>
 
@@ -42,14 +43,32 @@ let results = [];
     const signal = searchController.signal;
 
     if (!query.trim()) {
-      if(resultsDiv) resultsDiv.textContent = '';
+      if(resultsDiv) {
+        resultsDiv.textContent = '';
+        resultsDiv.removeAttribute('aria-busy');
+      }
       return;
+    }
+
+    if (resultsDiv) {
+      // Show loading state
+      const loading = document.createElement('div');
+      loading.className = 'search-message';
+      loading.style.padding = '0.5rem';
+      loading.style.color = 'var(--gs-fg-muted, #888)';
+      loading.textContent = 'Searching...';
+      resultsDiv.textContent = '';
+      resultsDiv.appendChild(loading);
+      resultsDiv.setAttribute('aria-busy', 'true');
     }
 
     try {
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query), { signal });
       if (!res.ok) {
-        if (resultsDiv) resultsDiv.textContent = '';
+        if (resultsDiv) {
+          resultsDiv.textContent = '';
+          resultsDiv.removeAttribute('aria-busy');
+        }
         console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
         return;
       }
@@ -57,6 +76,17 @@ let results = [];
 
       if (resultsDiv) {
         resultsDiv.textContent = ''; // Clear previous results
+        resultsDiv.removeAttribute('aria-busy');
+
+        if (results.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'search-message';
+          empty.style.padding = '0.5rem';
+          empty.style.color = 'var(--gs-fg-muted, #888)';
+          empty.textContent = 'No results found.';
+          resultsDiv.appendChild(empty);
+          return;
+        }
 
         results.forEach((r) => {
             const a = document.createElement('a');
@@ -75,6 +105,7 @@ let results = [];
       if (e.name === 'AbortError') return; // Ignore aborted requests
       if (resultsDiv) {
         resultsDiv.textContent = '';
+        resultsDiv.removeAttribute('aria-busy');
         const err = document.createElement('div');
         err.className = 'search-error';
         err.style.color = 'red';
