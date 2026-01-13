@@ -21,6 +21,9 @@ const app = new Hono<{ Bindings: Env }>();
 app.use('*', secureHeaders());
 
 // Sentinel: Security Middleware
+// Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
+
 // Enforce CORS to allow legitimate browser clients (if any) and handle preflight
 app.use('*', cors({
   origin: '*',
