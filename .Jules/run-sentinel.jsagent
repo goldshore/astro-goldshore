@@ -164,10 +164,23 @@ function fixDeadTodos(content) {
 
 function fixEnvTypes(content, filePath) {
     if (content.includes(': Env') || content.includes('<Env>')) {
-        if (!content.includes('interface Env') && !content.includes('type Env') && !content.includes('import type { Env }')) {
+        // Check if Env is already imported or defined to ensure idempotency
+        if (!content.includes('interface Env') && !content.includes('type Env') && !content.includes('import type { Env }') && !content.includes('import { Env }')) {
              if (filePath.endsWith('.ts') || filePath.endsWith('.js')) {
                  const importStmt = "import type { Env } from '@cloudflare/workers-types';\n";
                  return { modified: true, content: importStmt + content };
+             } else if (filePath.endsWith('.astro')) {
+                 if (content.startsWith('---')) {
+                     const parts = content.split('---');
+                     if (parts.length >= 3) {
+                         // Double check frontmatter for existing import
+                         if (!parts[1].includes("import type { Env }") && !parts[1].includes("import { Env }")) {
+                             const importStmt = "\nimport type { Env } from '@cloudflare/workers-types';";
+                             parts[1] = parts[1] + importStmt;
+                             return { modified: true, content: parts.join('---') };
+                         }
+                     }
+                 }
              }
         }
     }
@@ -223,6 +236,9 @@ console.log('✅ Lockfile present.');
 try {
     const changedFiles = execSync('git diff --name-only origin/main...HEAD').toString().trim().split('\n').filter(Boolean);
 
+    // Always regenerate lockfile to ensure a single source of truth
+    if (fs.existsSync('pnpm-lock.yaml')) {
+        try { fs.unlinkSync('pnpm-lock.yaml'); } catch(e) {}
     // Identify conflicted files first
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
     const lockfileConflicted = conflictedFiles.includes('pnpm-lock.yaml');
@@ -237,6 +253,9 @@ try {
         run('pnpm install', { ignoreError: true });
         resolvedFiles.push('pnpm-lock.yaml');
     }
+    run('rm -rf node_modules', { ignoreError: true });
+    run('pnpm install', { ignoreError: true });
+    resolvedFiles.push('pnpm-lock.yaml');
 
     for (const file of conflictedFiles) {
         if (file === 'pnpm-lock.yaml') continue; // Already handled
@@ -336,10 +355,9 @@ async function processPR(pr, reportObj) {
 
             // Fallback to merge to expose conflict markers for resolution
             try {
-                 run(`git merge origin/main`);
-            } catch (mergeError) {
-                // Merge failed (expected), proceed to resolve
-            }
+                // Merge to generate conflict markers for Sentinel to parse
+                run(`git merge origin/main`);
+            } catch (mergeError) {}
         }
 
         // Step 3: Resolve Mechanical Conflicts
