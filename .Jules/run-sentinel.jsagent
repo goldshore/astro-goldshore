@@ -53,6 +53,21 @@ function readReport() {
     return { timestamp: new Date().toISOString(), resolved: [], failures: [] };
 }
 
+function loadReport() {
+    let report = { timestamp: new Date().toISOString(), resolved: [], failures: [] };
+    if (fs.existsSync(REPORT_FILE)) {
+        try {
+            const data = JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
+            if (data) {
+                report = { ...report, ...data, timestamp: new Date().toISOString() };
+            }
+        } catch (e) {
+            log(`Failed to load existing report: ${e.message}`, 'WARN');
+        }
+    }
+    return report;
+}
+
 function writeReport(data) {
     try {
         fs.mkdirSync(path.dirname(REPORT_FILE), { recursive: true });
@@ -353,6 +368,7 @@ function resolveMechanicalConflicts() {
         if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
         if (fs.existsSync('node_modules')) fs.rmSync('node_modules', { recursive: true, force: true });
 
+    // 1. Identify conflicted files (text)
         log('Regenerating lockfile...', 'ACTION');
         run('pnpm install', { ignoreError: true }); // ignore error to proceed, verification will catch issues
         resolvedFiles.push('pnpm-lock.yaml');
@@ -370,6 +386,7 @@ function resolveMechanicalConflicts() {
     // Identify conflicted files
     const conflictedFiles = run('git diff --name-only --diff-filter=U', { ignoreError: true }).split('\n').filter(Boolean);
 
+    // 2. Resolve text-based conflicts
     for (const file of conflictedFiles) {
         if (file === 'pnpm-lock.yaml') continue; // Handled
         if (!fs.existsSync(file)) continue;
@@ -412,6 +429,20 @@ function resolveMechanicalConflicts() {
             fs.writeFileSync(file, content);
             resolvedFiles.push(file);
             run(`git add "${file}"`);
+        }
+    }
+
+    // 3. Lockfile / Hygiene
+    // Always run this as the last step to ensure consistency and fix any lockfile conflicts
+    log('Regenerating lockfile...', 'ACTION');
+    try {
+        if (fs.existsSync('pnpm-lock.yaml')) fs.unlinkSync('pnpm-lock.yaml');
+        run('rm -rf node_modules', { ignoreError: true });
+        run('pnpm install', { ignoreError: true });
+        resolvedFiles.push('pnpm-lock.yaml');
+        run('git add pnpm-lock.yaml');
+    } catch (e) {
+        log(`Lockfile regeneration failed: ${e.message}`, 'WARN');
         }
         // Stage the resolved file
         // Always add the file back to mark resolution (even if we just touched it, or if we want to accept ours?)
