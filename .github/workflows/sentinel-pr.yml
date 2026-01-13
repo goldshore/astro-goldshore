@@ -1,8 +1,31 @@
-name: Sentinel PR Scan
+name: SENTINEL (PR)
+
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sentinel-pr-check:
+    name: Run SENTINEL guardrails
+    runs-on: ubuntu-latest
+    env:
+      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
+        with:
+          node-version: 20
+      - name: Preview SENTINEL prompt
+        run: node ./.Jules/run-sentinel.jsagent
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   sentinel:
@@ -28,6 +51,23 @@ jobs:
           cache: 'pnpm'
 
       - name: Configure Git Identity
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Run Sentinel (PR Mode)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config --global user.name "Jules Sentinel"
           git config --global user.email "jules@goldshore.ai"
