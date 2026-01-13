@@ -3,7 +3,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  sentinel-pr:
+  sentinel-pr-check:
+    name: Run SENTINEL guardrails
     runs-on: ubuntu-latest
     permissions:
       contents: write
