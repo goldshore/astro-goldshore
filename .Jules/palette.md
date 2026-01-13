@@ -12,6 +12,6 @@
 **Learning:** Standard HTML forms often lack explicit association between helper text and inputs, making them opaque to screen reader users. `aria-describedby` is the semantic bridge needed.
 **Action:** Enhanced Contact Form with `autocomplete` attributes for faster completion and linked helper text via `aria-describedby` for robust accessibility.
 
-## 2025-12-20 - Active State Accessibility
-**Learning:** Relying solely on color (e.g., cyan text) to indicate an active navigation state fails WCAG 1.4.1 (Use of Color). This excludes users with color vision deficiencies.
-**Action:** Updated `DocsSidebar` to use `aria-current="page"` for semantic state and added a `border-left` + `font-weight` change as a redundant visual indicator.
+## 2026-01-02 - Semantic Sticky Navigation
+**Learning:** Sidebars in long documentation pages often lose context when scrolling. Sticky positioning combined with explicit `aria-current="page"` provides persistent context for both sighted and screen reader users.
+**Action:** Apply `position: sticky` and `aria-current` to all sidebar navigation components to improve wayfinding.
