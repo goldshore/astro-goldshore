@@ -158,6 +158,7 @@ async function githubRequest(method, path, body = null) {
         if (body) req.write(JSON.stringify(body));
         req.end();
     });
+}
 console.log('Running Jules Sentinel Checks...');
 
 const RULES = {
