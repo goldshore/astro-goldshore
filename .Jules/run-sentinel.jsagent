@@ -48,7 +48,9 @@ function execFileSafe(file, args, options = {}) {
         if (options.ignoreError) return null;
         throw new Error(`Command failed: ${file} ${args.join(' ')}\n${e.message}\n${e.stderr}`);
     }
-function loadReport() {
+}
+
+function loadReportInternal() {
     try {
         if (fs.existsSync(REPORT_FILE)) {
             return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
