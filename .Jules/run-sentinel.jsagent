@@ -1,7 +1,7 @@
 // .Jules/run-sentinel.jsagent
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const https = require('https');
 
 // --- Configuration ---
@@ -48,7 +48,9 @@ function execFileSafe(file, args, options = {}) {
         if (options.ignoreError) return null;
         throw new Error(`Command failed: ${file} ${args.join(' ')}\n${e.message}\n${e.stderr}`);
     }
-function loadReport() {
+}
+
+function loadReportInternal() {
     try {
         if (fs.existsSync(REPORT_FILE)) {
             return JSON.parse(fs.readFileSync(REPORT_FILE, 'utf8'));
@@ -158,6 +160,7 @@ async function githubRequest(method, path, body = null) {
         if (body) req.write(JSON.stringify(body));
         req.end();
     });
+}
 console.log('Running Jules Sentinel Checks...');
 
 const RULES = {
@@ -335,7 +338,6 @@ function fixMissingImports(content, filePath) {
     let modified = false;
     let createdFiles = [];
     let match;
-    let createdFiles = [];
 
     // Use loop to find all imports
     while ((match = importRegex.exec(content)) !== null) {
