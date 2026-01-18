@@ -80,7 +80,7 @@ const { title = 'GoldShore', description = 'GoldShore AI', currentPath = Astro.u
                 <a href="/team" aria-current={currentPath === '/team' ? 'page' : undefined}>Team</a>
                 <a href="/services" aria-current={currentPath === '/services' ? 'page' : undefined}>Services</a>
               </div>
-              <div class="gs-nav" style="flex-direction: column; align-items: flex-start; gap: var(--gs-space-2);">
+              <div class="gs-nav gs-nav--vertical-support">
                 <strong><span class="aria-icon aria-icon-signal" aria-hidden="true"></span>Support</strong>
                 <a href="/contact" aria-current={currentPath === '/contact' ? 'page' : undefined}>Contact</a>
                 <a href="/legal/privacy" aria-current={currentPath === '/legal/privacy' ? 'page' : undefined}>Privacy</a>
