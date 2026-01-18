@@ -335,7 +335,6 @@ function fixMissingImports(content, filePath) {
     let modified = false;
     let createdFiles = [];
     let match;
-    let createdFiles = [];
 
     // Use loop to find all imports
     while ((match = importRegex.exec(content)) !== null) {
