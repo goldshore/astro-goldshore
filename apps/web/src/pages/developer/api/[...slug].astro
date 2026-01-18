@@ -2,29 +2,26 @@
 import Layout from '../../../layouts/BaseLayout.astro';
 import ApiSidebar from '../../../components/ApiSidebar.astro';
 import ApiEndpoint from '../../../components/ApiEndpoint.astro';
-import openapi from '../../../data/v1.json';
-
-// Bolt Optimization: Enable Static Site Generation (SSG) for API docs.
-// This improves Time to First Byte (TTFB) significantly by serving pre-rendered HTML via CDN
-// instead of executing the render logic on every request (SSR).
-export const prerender = true;
-
-// Generate static paths based on the OpenAPI specification.
-// This ensures all documented endpoints are pre-built.
-export function getStaticPaths() {
-  const paths = Object.keys(openapi.paths).map((path) => ({
-    params: { slug: path.replace(/^\//, '') },
-  }));
-
-  return [
-    { params: { slug: undefined } }, // Handle the index route (/developer/api)
-    ...paths
-  ];
-}
 
 const { slug } = Astro.params;
 const endpoint = slug || '';
+
+// Mock data or fetch logic here.
+// In a real scenario, we might import this from `@goldshore/api-spec` or similar.
+const openapi = {
+  info: { title: 'GoldShore API', version: '1.0.0' },
+  paths: {
+    '/system/status': {
+      get: { summary: 'Get System Status', description: 'Returns the health of the system.' }
+    }
+  }
+};
 ---
+
+<html>
+  <body class="api-body">
+
+    <ApiSidebar version={version} paths={paths} />
 
 <Layout title="API Reference">
   <div class="api-container">
