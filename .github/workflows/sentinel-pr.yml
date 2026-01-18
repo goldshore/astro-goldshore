@@ -1,5 +1,4 @@
-name: SENTINEL (PR)
-
+name: Sentinel PR Check
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -13,61 +12,31 @@ jobs:
   sentinel-pr-check:
     name: Run SENTINEL guardrails
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      JULES_API_KEY: ${{ secrets.JULES_API_KEY }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@5e21ff4d9bc1a8cf6b156bde92b7f4e0528cf49d
-        with:
-          node-version: 20
-      - name: Preview SENTINEL prompt
-        run: node ./.Jules/run-sentinel.jsagent
-  contents: write
-  pull-requests: write
-  issues: write
-
-jobs:
-  sentinel:
-    runs-on: ubuntu-latest
-    if: github.repository == 'goldshore/astro-goldshore' && github.event.pull_request.head.repo.full_name == 'goldshore/astro-goldshore'
     permissions:
       contents: write
       pull-requests: write
       issues: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: pnpm/action-setup@v3
-        with:
-          version: 8
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-
-      - name: Configure Git Identity
+            fetch-depth: 0
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 9
-
-          version: 8
-          run_install: false
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            version: 8
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
-          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@c5ba7f7862a0f64c1b1a05fbac13e0b8e86ba08c # v4
+        with:
+          version: 9
+          run_install: false
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -76,10 +45,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "Jules Sentinel"
-          git config --global user.email "jules@goldshore.ai"
+          git config user.name "Jules Sentinel"
+          git config user.email "jules@goldshore.ai"
+          node .Jules/run-sentinel.jsagent --mode=pr
 
-      - name: Run Sentinel (PR Mode)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node .Jules/run-sentinel.jsagent --mode=pr
+      - name: Upload Sentinel report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sentinel-report
+          path: .jules/guard/report.json
