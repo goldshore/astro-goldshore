@@ -19,6 +19,7 @@
 **Vulnerability:** `DocsSidebar.astro` used `set:html` with a manually constructed HTML string for links, which would allow XSS if a documentation page title contained malicious scripts.
 **Learning:** Even internal content (like content collections) should be treated as untrusted to enforce "Defense in Depth". Avoiding manual HTML string construction prevents this class of bugs entirely.
 **Prevention:** Use Astro's native expression syntax `{variable}` instead of `set:html` or `Fragment` whenever possible. It automatically handles escaping.
+
 ## 2026-01-09 - Missing Security Headers in Admin App
 **Vulnerability:** The `apps/admin` application (dashboard) lacked standard HTTP security headers (`X-Frame-Options`, `HSTS`, `X-Content-Type-Options`), making it potentially vulnerable to clickjacking and MIME sniffing.
 **Learning:** When creating new Astro apps in a monorepo, middleware (and thus security headers) is not automatically inherited from other apps.
