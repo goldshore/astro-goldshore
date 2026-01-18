@@ -38,24 +38,26 @@ permissions:
 jobs:
   sentinel:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          fetch-depth: 0
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-          run_install: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
+            fetch-depth: 0
           node-version: 20
-          cache: 'pnpm'
-
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+            run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+            node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+            run_install: false
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
@@ -66,10 +68,8 @@ jobs:
           git config user.name "Jules Sentinel"
           git config user.email "jules@goldshore.ai"
           node .Jules/run-sentinel.jsagent --mode=sweep
-
-      - name: Upload Sentinel report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Upload Report
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: sentinel-report
           path: .Jules/guard/report.json
