@@ -110,7 +110,7 @@ infra
  | | |__.gitkeep
  |__cloudflare
  | |__BINDINGS_MAP.md
- | |__goldshore-agent.wrangler.toml
+ | |__gs-agent.wrangler.toml
  | |__runbooks
  | | |__DNS_AND_EMAIL.md
  | | |__CLOUDFLARE_APPS.md

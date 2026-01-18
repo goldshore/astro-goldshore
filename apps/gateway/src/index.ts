@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
+import { cors } from 'hono/cors';
 import { checkAuth } from './auth';
 
 type Env = {
@@ -9,18 +10,36 @@ type Env = {
   ENV: string;
 };
 
-// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
-app.use('*', secureHeaders());
-
 const API_ORIGIN = 'https://api.goldshore.ai';
 const app = new Hono<{ Bindings: Env }>();
 
-// Sentinel: Add security headers to all responses
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
 app.use('*', secureHeaders());
 
 // Authentication Middleware
 app.use('*', async (c, next) => {
     // Skip auth for health check and OPTIONS requests (CORS preflight)
+  CLOUDFLARE_ACCESS_AUDIENCE?: string;
+  CLOUDFLARE_TEAM_DOMAIN?: string;
+};
+
+const app = new Hono<{ Bindings: Env }>();
+
+// Sentinel: Add security headers to all responses (X-Frame-Options, X-XSS-Protection, etc.)
+app.use('*', secureHeaders());
+
+// Sentinel: Add CORS protection
+app.use('*', cors({
+  origin: '*', // Public gateway
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'CF-Access-Jwt-Assertion'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 600,
+}));
+
+// Authentication Middleware
+app.use('*', async (c, next) => {
+    // Skip auth for health check and OPTIONS requests (handled by cors middleware)
     if (c.req.path === '/health' || c.req.method === 'OPTIONS') {
         await next();
         return;
@@ -46,9 +65,14 @@ app.all('*', async (c) => {
         return c.env.API.fetch(c.req.raw);
     }
 
+    // Fallback logic for environments without Service Bindings
+    if (API_ORIGIN) {
+        const url = new URL(c.req.url);
+        const targetUrl = new URL(url.pathname + url.search, API_ORIGIN);
+        return fetch(targetUrl.toString(), c.req.raw);
+    }
+
     // Fallback to fetch if no binding (e.g. local dev without binding simulation)
-    // Note: The original code used API_ORIGIN, but Service Bindings are preferred.
-    // If API is missing, we return 500 or implement fetch logic.
     return c.text('Upstream API not configured', 500);
 });
 
