@@ -1,6 +1,6 @@
-import cloudflare from "@astrojs/cloudflare";
-import tailwind from "@astrojs/tailwind";
-import { defineConfig } from "astro/config";
+import { defineConfig } from 'astro/config';
+import cloudflare from '@astrojs/cloudflare';
+import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   srcDir: './src',
@@ -8,12 +8,10 @@ export default defineConfig({
   prefetch: true,
   adapter: cloudflare(),
   prefetch: true,
-  integrations: [
-    // tailwind({
-    //   applyBaseStyles: false,
-    //   configFile: "../../tailwind.config.mjs"
-    // })
-  ],
+  integrations: [tailwind({
+    applyBaseStyles: false,
+    configFile: "../../tailwind.config.mjs"
+  })],
   vite: {
     publicDir: './openapi',
     resolve: {
