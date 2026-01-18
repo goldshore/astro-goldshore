@@ -240,7 +240,12 @@
       const res = await fetch('/api/docs-search?q=' + encodeURIComponent(query), { signal });
 
       if (!res.ok) {
-        throw new Error(`Status ${res.status}`);
+        if (resultsDiv) {
+          resultsDiv.textContent = '';
+          resultsDiv.removeAttribute('aria-busy');
+        }
+        console.error(`Search request failed with status ${res.status}: ${res.statusText}`);
+        return;
       }
 
       const results = await res.json() as SearchResult[];
@@ -315,6 +320,7 @@
       if (e.name === 'AbortError') return; // Ignore aborted requests
       if (resultsDiv) {
         resultsDiv.textContent = '';
+        resultsDiv.removeAttribute('aria-busy');
         const err = document.createElement('div');
         err.className = 'search-error';
         err.style.color = 'red';
